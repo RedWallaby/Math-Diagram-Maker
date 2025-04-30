@@ -27,6 +27,7 @@ public class ClickableLine : MonoBehaviour
             if (hit.collider != null)
             {
                 Debug.Log("You've hit something");
+                Debug.Log(hit.collider.gameObject.name);
                 if (hit.transform == transform)
                 {
                     Debug.Log("Line clicked!");
@@ -50,7 +51,7 @@ public class ClickableLine : MonoBehaviour
 
     public List<Vector2> CalculatePoints(Vector2 pos1, Vector2 pos2)
     {
-        float width = line.startWidth;
+        float width = line.startWidth * 2; //multiplied by 2 in order to extent the width of the line (2 is an arbitrary multiplier)
         float x = pos2.x - pos1.x;
         float y = pos1.y - pos2.y;
         float deltaX = width/2 * y / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));

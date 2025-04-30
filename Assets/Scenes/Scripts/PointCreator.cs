@@ -3,19 +3,10 @@ using UnityEngine.EventSystems;
 
 public class PointCreator : MonoBehaviour, IPointerClickHandler
 {
+    public GameObject diagram;
     public GameObject pointPrefab;
-    public GameObject linePrefab;
-    //private GameObject currentLine;
-    //private LineRenderer lineRenderer;
     public Point point;
     public bool placing;
-
-    void Start()
-    {
-        //currentLine = Instantiate(linePrefab, transform);
-        //lineRenderer = currentLine.GetComponent<LineRenderer>();
-        //lineRenderer.positionCount = 0;
-    }
 
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -28,7 +19,7 @@ public class PointCreator : MonoBehaviour, IPointerClickHandler
 
     private void CreatePoint(Vector3 position)
     {
-        GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity);
+        GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, diagram.transform);
         point = pointObj.GetComponent<Point>();
     }
 
@@ -39,6 +30,17 @@ public class PointCreator : MonoBehaviour, IPointerClickHandler
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             mousePosition.z = 0; // Set z to 0 for 2D
             point.gameObject.transform.position = mousePosition;
+            RaycastHit2D hit = Physics2D.Raycast(mousePosition, Vector2.zero);
+            if (hit.collider != null && hit.collider.TryGetComponent(out Line line))
+            {
+                point.gameObject.transform.position = line.CalculateClosestPoint(mousePosition);
+            }
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                placing = false;
+                point = null;
+            }
         }
     }
 }
