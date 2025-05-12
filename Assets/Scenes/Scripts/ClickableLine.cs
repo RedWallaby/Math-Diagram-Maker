@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//-------------------------------------------ARTIFACT CLASS - NOT IN USE-----------------------------------
 public class ClickableLine : MonoBehaviour
 {
     PolygonCollider2D col;
@@ -14,27 +15,6 @@ public class ClickableLine : MonoBehaviour
             col = gameObject.AddComponent<PolygonCollider2D>();
         }
         line = GetComponent<LineRenderer>();
-    }
-
-    public void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Debug.Log("Youve clicked");
-            RaycastHit2D hit = Physics2D.Raycast(mousePosition, Vector2.zero);
-
-            if (hit.collider != null)
-            {
-                Debug.Log("You've hit something");
-                Debug.Log(hit.collider.gameObject.name);
-                if (hit.transform == transform)
-                {
-                    Debug.Log("Line clicked!");
-                    // Add your click handling logic here
-                }
-            }
-        }
     }
 
     public void LateUpdate()
@@ -56,7 +36,7 @@ public class ClickableLine : MonoBehaviour
         float y = pos1.y - pos2.y;
         float deltaX = width/2 * y / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
         float deltaY = width/2 * x / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
-        List<Vector2> points = new List<Vector2>()
+        List<Vector2> points = new()
         {
             pos1 + new Vector2(deltaX, deltaY),
             pos2 + new Vector2(deltaX, deltaY),

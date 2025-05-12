@@ -1,12 +1,12 @@
+using System.Drawing;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class LineCreator : MonoBehaviour, IPointerClickHandler
+public class LineCreator : DiagramEditor
 {
-    public Diagram diagram;
     public Line line;
-    public GameObject linePrefab;
     public PlacingStage placing;
     public Point hoveringPoint;
     public Line hoveringLine;
@@ -17,45 +17,27 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
 
     }
 
-    // Allows the line to lock to the nearest point or line (gives points priority)
-    public void GetProminentFeature(ref Vector3 position)
-    {
-        hoveringPoint = null;
-        hoveringLine = null;
-        RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
-        foreach (RaycastHit2D hit in hits)
-        {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Point point))
-            {
-                position = point.position;
-                hoveringPoint = point;
-                return;
-            }
-        }
-        foreach (RaycastHit2D hit in hits)
-        {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Line line))
-            {
-                position = line.CalculateClosestPosition(position);
-                hoveringLine = line;
-                return;
-            }
-        }
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
+    public override void OnPointerClick(PointerEventData eventData)
     {
         if (placing != PlacingStage.None) return;
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(eventData.position);
-        mousePosition.z = 0; // Set z to 0 for 2D
-        CreateLine(mousePosition);
-        placing = PlacingStage.Point;
+        diagram.SetEditor(this);
     }
 
-    private void CreateLine(Vector3 position)
+    public override void ActivateEdit()
     {
-        GameObject lineObj = Instantiate(linePrefab, position, Quaternion.identity, diagram.transform);
+        placing = PlacingStage.Point;
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePosition.z = 0; // Set z to 0 for 2D
+        GameObject lineObj = Instantiate(diagram.linePrefab, mousePosition, Quaternion.identity, diagram.transform);
         line = lineObj.GetComponent<Line>();
+        line.col.enabled = false; // Disable the collider until placement is confirmed
+    }
+
+    public override void DeactivateEdit()
+    {
+        Destroy(line.gameObject);
+        line = null;
+        placing = PlacingStage.None;
     }
 
     public void Update()
@@ -65,7 +47,7 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             mousePosition.z = 0; // Set z to 0 for 2D
 
-            GetProminentFeature(ref mousePosition);
+            diagram.GetProminentFeature(ref mousePosition, out hoveringPoint, out hoveringLine);
             line.gameObject.transform.position = mousePosition;
 
             if (Input.GetMouseButtonDown(0))
@@ -77,9 +59,11 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
                 if (!hoveringPoint)
                 {
                     hoveringPoint = diagram.CreateInstantPoint(mousePosition);
+                    if (hoveringLine)
+                        hoveringPoint.percentage = hoveringLine.CalculatePercentage(hoveringPoint.position);
                 }
 
-                // Check if the line is snapping to another line
+                // Account for if the line is snapping to another line
                 if (hoveringLine)
                 {
                     hoveringPoint.semiAttatchedLine = hoveringLine;
@@ -96,7 +80,7 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             mousePosition.z = 0; // Set z to 0 for 2D
 
-            GetProminentFeature(ref mousePosition);
+            diagram.GetProminentFeature(ref mousePosition, out hoveringPoint, out hoveringLine);
             line.line.SetPosition(1, mousePosition);
 
             if (Input.GetMouseButtonDown(0))
@@ -105,9 +89,11 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
                 if (!hoveringPoint)
                 {
 					hoveringPoint = diagram.CreateInstantPoint(mousePosition);
-				}
+                    if (hoveringLine)
+                        hoveringPoint.percentage = hoveringLine.CalculatePercentage(hoveringPoint.position);
+                }
 
-				// Check if the line is snapping to another line
+                // Account for if the line is snapping to another line
 				if (hoveringLine)
 				{
 					hoveringPoint.semiAttatchedLine = hoveringLine;
@@ -115,10 +101,14 @@ public class LineCreator : MonoBehaviour, IPointerClickHandler
 				}
 
 				// Attach the point to the line
-				line.points[0] = hoveringPoint;
+				line.points[1] = hoveringPoint;
 				hoveringPoint.attatchedLines.Add(line);
 
-				line.AddComponent<ClickableLine>();
+                line.col.enabled = true;
+                line = null;
+
+                // Keep the editing persistent
+                ActivateEdit();
             }
         }
     }

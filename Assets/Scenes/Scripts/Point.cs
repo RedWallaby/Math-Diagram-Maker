@@ -6,6 +6,7 @@ public class Point : MonoBehaviour
     public Vector2 position => gameObject.transform.position;
     public List<Line> attatchedLines;
     public Line semiAttatchedLine;
+	public float percentage;
     public CircleCollider2D col;
 
 	public void Awake()
