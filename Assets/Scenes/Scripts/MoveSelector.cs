@@ -6,8 +6,7 @@ public class MoveSelector : DiagramEditor
 {
     public bool moving;
     public Point selectedPoint;
-    public Point hoveringPoint;
-    public Line hoveringLine;
+    public Attachable selectedAttachable;
 
     public override void OnPointerClick(PointerEventData eventData)
     {
@@ -29,46 +28,49 @@ public class MoveSelector : DiagramEditor
     public void Update()
     {
         if (!moving) return;
-        Vector3 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        placingPosition.z = 0; // Set z to 0 for 2D
+        Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         if (Input.GetMouseButtonDown(0))
         {
             selectedPoint = diagram.GetPointAtPosition(placingPosition);
+            selectedAttachable = diagram.GetProminentAttachable(ref placingPosition);
         }
-
         //Movement Logic
         if (selectedPoint != null)
         {
+            // Determine if movement is along a line or free movement
             if (selectedPoint.semiAttatchedLine != null)
             {
-                placingPosition = selectedPoint.semiAttatchedLine.CalculateClosestPosition(placingPosition);
+                placingPosition = selectedPoint.semiAttatchedLine.GetClosestPosition(placingPosition);
                 selectedPoint.percentage = selectedPoint.semiAttatchedLine.CalculatePercentage(placingPosition);
             }
             else
             {
+                // Allows points to lock to other points
                 // Using 'local functions' to filter points (not a lambda function)
                 bool exclusion(Point p) => p == selectedPoint || p.semiAttatchedLine != null;
                 Point newPoint = diagram.GetPointAtPosition(placingPosition, exclusion);
-                if (newPoint != null && newPoint.semiAttatchedLine == null)
+                if (newPoint != null)
                 {
                     placingPosition = newPoint.position;
                 }
             }
-            foreach (Line line in selectedPoint.attatchedLines)
+            selectedPoint.UpdatePoint(placingPosition);
+        }
+        else if (selectedAttachable != null)
+        {
+            if (selectedAttachable is Circle circle)
             {
-                line.UpdatePointPosition(selectedPoint, placingPosition);
+                circle.SetRadius(placingPosition);
             }
-            selectedPoint.gameObject.transform.position = placingPosition;
+        }
 
-            if (Input.GetMouseButtonUp(0))
-            {
-                
-
-                selectedPoint = null;
-                moving = false;
-                ActivateEdit();
-            }
+        if (Input.GetMouseButtonUp(0))
+        {
+            selectedPoint = null;
+            selectedAttachable = null;
+            moving = false;
+            ActivateEdit();
         }
     }
 

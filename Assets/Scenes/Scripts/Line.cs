@@ -1,28 +1,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Line : MonoBehaviour
+public class Line : Attachable
 {
     public Point[] points = new Point[2];
-    public List<Point> attatchedPoints = new();
+    public List<Point> attachedPoints = new();
     public LineRenderer line;
     public PolygonCollider2D col;
-    public float lineWidthMultiplier = 2f;
+    public float colliderWidthMultiplier = 2f;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Awake()
     {
-        
+        line = GetComponent<LineRenderer>();
+        if (line == null)
+        {
+            line = gameObject.AddComponent<LineRenderer>();
+        }
+        col = GetComponent<PolygonCollider2D>();
+        if (col == null)
+        {
+            col = gameObject.AddComponent<PolygonCollider2D>();
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void AttachPoint(Point point)
     {
-        
+        point.percentage = CalculatePercentage(point.position);
+        point.semiAttatchedLine = this;
+        attachedPoints.Add(point);
     }
 
     // Calculates the distance of a position as a ratio to each end of the line, where 0 is at the start of the line and 1 is at the end
-    public float CalculatePercentage(Vector2 point)
+    public override float CalculatePercentage(Vector2 point)
     {
         Vector2 startPoint = line.GetPosition(0);
         Vector2 endPoint = line.GetPosition(1);
@@ -45,7 +54,7 @@ public class Line : MonoBehaviour
         }
 
         // Update attached points
-        foreach (Point attachedPoint in attatchedPoints)
+        foreach (Point attachedPoint in attachedPoints)
         {
             Vector2 newPosition = Vector2.Lerp(index == 0 ? position : line.GetPosition(0), index == 1 ? position : line.GetPosition(1), attachedPoint.percentage);
             foreach (Line attachedLine in attachedPoint.attatchedLines)
@@ -58,23 +67,9 @@ public class Line : MonoBehaviour
         line.SetPosition(index, position);
     }
 
-    private void Awake()
-    {
-        line = GetComponent<LineRenderer>();
-        if (line == null)
-        {
-            line = gameObject.AddComponent<LineRenderer>();
-        }
-        col = GetComponent<PolygonCollider2D>();
-        if (col == null)
-        {
-            col = gameObject.AddComponent<PolygonCollider2D>();
-        }
-    }
-
     //Only works given that the line contains two points
     //Uses a mathemtical formula to calculate the closest point on a line
-    public Vector2 CalculateClosestPosition(Vector2 point)
+    public override Vector2 GetClosestPosition(Vector2 point)
     {
         Vector3[] linePoints = new Vector3[line.positionCount];
         line.GetPositions(linePoints);
@@ -121,7 +116,7 @@ public class Line : MonoBehaviour
 
     public List<Vector2> CalculatePoints(Vector2 pos1, Vector2 pos2)
     {
-        float width = line.startWidth * lineWidthMultiplier;
+        float width = line.startWidth * colliderWidthMultiplier;
         float x = pos2.x - pos1.x;
         float y = pos1.y - pos2.y;
         float deltaX = width / 2 * y / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));

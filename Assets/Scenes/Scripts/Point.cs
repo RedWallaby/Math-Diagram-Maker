@@ -5,7 +5,7 @@ public class Point : MonoBehaviour
 {
     public Vector2 position => gameObject.transform.position;
     public List<Line> attatchedLines;
-    public Line semiAttatchedLine;
+    public Attachable semiAttatchedLine;
 	public float percentage;
     public CircleCollider2D col;
 
@@ -17,4 +17,13 @@ public class Point : MonoBehaviour
 			col = gameObject.AddComponent<CircleCollider2D>();
 		}
 	}
+
+    public void UpdatePoint(Vector2 placingPosition)
+    {
+        foreach (Line line in attatchedLines)
+        {
+            line.UpdatePointPosition(this, placingPosition);
+        }
+        gameObject.transform.position = placingPosition;
+    }
 }

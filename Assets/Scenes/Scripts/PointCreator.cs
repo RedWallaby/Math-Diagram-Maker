@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
 
 public class PointCreator : DiagramEditor
 {
@@ -20,6 +21,12 @@ public class PointCreator : DiagramEditor
         GameObject pointObj = Instantiate(diagram.pointPrefab, mousePosition, Quaternion.identity, diagram.transform);
         point = pointObj.GetComponent<Point>();
         point.col.enabled = false; // Disable the collider until placement is confirmed
+
+        // Settings
+        RectTransform rt = pointObj.GetComponent<RectTransform>();
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, diagram.pointRadius * 100);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, diagram.pointRadius * 100);
+        point.GetComponent<CircleCollider2D>().radius = diagram.pointRadius * 50;
     }
 
     public override void DeactivateEdit()
@@ -32,27 +39,14 @@ public class PointCreator : DiagramEditor
     public void Update()
     {
         if (!placing) return;
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePosition.z = 0; // Set z to 0 for 2D
-        point.gameObject.transform.position = mousePosition;
+        Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // Snap to nearest point on any detected line
-        RaycastHit2D hit = Physics2D.Raycast(mousePosition, Vector2.zero);
-        Line line = null;
-        if (hit.collider != null && hit.collider.TryGetComponent(out line))
-        {
-            point.gameObject.transform.position = line.CalculateClosestPosition(mousePosition);
-        }
-            
+        Attachable attachable = diagram.GetProminentAttachable(ref placingPosition);
+        point.gameObject.transform.position = placingPosition;
+
         if (Input.GetMouseButtonDown(0))
         {
-            // If snapping to line, attach the point to the line
-            if (line != null)
-            {
-                line.attatchedPoints.Add(point);
-                point.semiAttatchedLine = line;
-                point.percentage = line.CalculatePercentage(point.position);
-            }
+            if (attachable) attachable.AttachPoint(point);
 
             // Add the point to the diagram
             diagram.points.Add(point);
@@ -63,6 +57,5 @@ public class PointCreator : DiagramEditor
             // Keep the placing persistent
             ActivateEdit();
         }
-       
     }
 }

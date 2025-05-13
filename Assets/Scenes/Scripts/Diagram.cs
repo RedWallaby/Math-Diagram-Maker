@@ -9,11 +9,23 @@ public class Diagram : MonoBehaviour
     public List<Line> lines = new();
     public GameObject pointPrefab;
     public GameObject linePrefab;
+    public GameObject circlePrefab;
 
     public PointCreator pointCreator;
     public LineCreator lineCreator;
 
     public DiagramEditor currentEditor;
+
+    // Main settings
+    [Header("Diagram Settings")]
+    [Header("Line Settings")]
+    public float lineWidth = 0.075f;
+    public float colliderWidthMultiplier = 2f;
+
+    [Header("Point Settings")]
+    public float pointRadius = 0.3f;
+
+
 
 /*    public enum EditingType
     {
@@ -28,6 +40,13 @@ public class Diagram : MonoBehaviour
         GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, transform);
 		Point point = pointObj.GetComponent<Point>();
 		points.Add(point);
+
+        // Settings
+        RectTransform rt = pointObj.GetComponent<RectTransform>();
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, pointRadius * 100);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, pointRadius * 100);
+        point.GetComponent<CircleCollider2D>().radius = pointRadius * 50;
+
         return point;
 	}
 
@@ -40,32 +59,6 @@ public class Diagram : MonoBehaviour
         }
         currentEditor = editor;
         currentEditor.ActivateEdit();
-    }
-
-    // Gives first found feature (point/line) on a certain position (gives points priority)
-    public void GetProminentFeature(ref Vector3 position, out Point hovPoint, out Line hovLine)
-    {
-        hovPoint = null;
-        hovLine = null;
-        RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
-        foreach (RaycastHit2D hit in hits)
-        {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Point point))
-            {
-                position = point.position;
-                hovPoint = point;
-                return;
-            }
-        }
-        foreach (RaycastHit2D hit in hits)
-        {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Line line))
-            {
-                position = line.CalculateClosestPosition(position);
-                hovLine = line;
-                return;
-            }
-        }
     }
 
     public Point GetPointAtPosition(Vector2 position, Func<Point, bool> exclusion = null)
@@ -81,4 +74,56 @@ public class Diagram : MonoBehaviour
         }
         return null;
     }
+
+    // Gives first found feature (point/line/circle) on a certain position (giving a priority of point -> line / circle, hence the 2 different loops)
+    public Attachable GetProminentAttachable(ref Vector2 position)
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider != null && hit.collider.TryGetComponent(out Attachable attachable))
+            {
+                if (attachable is Circle circle)
+                {
+                    if (Vector2.Distance(circle.centre.position, position) < (circle.radius - lineWidth * colliderWidthMultiplier / 2)) continue; // Skip if the point is not within the circles ring
+                }
+                position = attachable.GetClosestPosition(position);
+                return attachable;
+            }
+        }
+        return null;
+    }
+
+    public void GetProminentFeature(ref Vector2 position, out Point point, out Attachable attachable)
+    {
+        point = GetPointAtPosition(position);
+        attachable = null;
+        if (point)
+        {
+            position = point.position;
+        }
+        else
+        {
+            attachable = GetProminentAttachable(ref position);
+        }
+    }
+/*
+
+    public T GetAttachableAtPosition<T>(Vector2 position, Func<T, bool> exclusion = null) where T : Attachable
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider != null && hit.collider.TryGetComponent(out Attachable attachable) && attachable is T)
+            {
+                if (exclusion != null && exclusion((T) attachable)) continue; // Skip the excluded points
+                if (attachable is Circle) 
+                {
+                    if (Vector2.Distance(((Circle) attachable).centre.position, position) < ((Circle) attachable).radius - lineWidth / 2) continue; // Skip if the point is not within the circles ring
+                }
+                return (T) attachable;
+            }
+        }
+        return null;
+    }*/
 }
