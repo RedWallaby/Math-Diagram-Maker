@@ -130,4 +130,35 @@ public class Line : Attachable
         };
         return points;
     }
+
+
+    // EASE OF USE FUNCTIONS
+    public Point GetSharedPoint(Line line)
+    {
+        foreach (Point point in points)
+        {
+            if (line.points[0] == point || line.points[1] == point)
+            {
+                return point;
+            }
+        }
+        return null;
+    }
+
+    public Vector2 GetLineVector(Point point)
+    {
+        if (point == points[0])
+        {
+            return points[1].position - points[0].position;
+        }
+        else if (point == points[1])
+        {
+            return points[0].position - points[1].position;
+        }
+        else
+        {
+            Debug.LogError("Point not attached to line");
+            return Vector2.zero;
+        }
+    } 
 }

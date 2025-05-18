@@ -10,6 +10,7 @@ public class Diagram : MonoBehaviour
     public GameObject pointPrefab;
     public GameObject linePrefab;
     public GameObject circlePrefab;
+    public GameObject anglePrefab;
 
     public PointCreator pointCreator;
     public LineCreator lineCreator;
