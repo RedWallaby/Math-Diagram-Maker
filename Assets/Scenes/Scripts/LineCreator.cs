@@ -10,12 +10,6 @@ public class LineCreator : DiagramEditor
     public Line line;
     public PlacingStage placing;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-
-    }
-
     public override void OnPointerClick(PointerEventData eventData)
     {
         if (placing != PlacingStage.None) return;
@@ -54,7 +48,7 @@ public class LineCreator : DiagramEditor
             line.line.SetPosition(1, placingPosition);
         }
 
-        if (!Input.GetMouseButtonDown(0)) return;
+        if (!diagram.clickedOverDiagram) return;
 
         if (placing == PlacingStage.Point)
         {

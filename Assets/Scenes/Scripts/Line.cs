@@ -63,11 +63,13 @@ public class Line : Attachable
             }
             attachedPoint.gameObject.transform.position = newPosition;
         }
+
+        // Update the point's position to the average of its point's positions
+        transform.position = (line.GetPosition(0) + line.GetPosition(1)) / 2;
         //Update the line renderer position
         line.SetPosition(index, position);
     }
 
-    //Only works given that the line contains two points
     //Uses a mathemtical formula to calculate the closest point on a line
     public override Vector2 GetClosestPosition(Vector2 point)
     {
@@ -160,5 +162,10 @@ public class Line : Attachable
             Debug.LogError("Point not attached to line");
             return Vector2.zero;
         }
-    } 
+    }
+
+    public override void ToggleLabel()
+    {
+        throw new System.NotImplementedException();
+    }
 }

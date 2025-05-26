@@ -30,7 +30,7 @@ public class MoveSelector : DiagramEditor
         if (!moving) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        if (Input.GetMouseButtonDown(0))
+        if (diagram.clickedOverDiagram)
         {
             selectedPoint = diagram.GetPointAtPosition(placingPosition);
             selectedAttachable = diagram.GetProminentAttachable(ref placingPosition);

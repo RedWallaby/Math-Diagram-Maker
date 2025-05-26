@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class Angle : MonoBehaviour
+public class Angle : Element
 {
     public LineRenderer line;
     public float startAngle;
@@ -52,5 +52,10 @@ public class Angle : MonoBehaviour
         if (centre == null) return;
         transform.position = centre.transform.position;
         DrawAngle();
+    }
+
+    public override void ToggleLabel()
+    {
+        throw new System.NotImplementedException();
     }
 }

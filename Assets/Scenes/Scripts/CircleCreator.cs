@@ -42,7 +42,7 @@ public class CircleCreator : DiagramEditor
         {
             diagram.GetProminentFeature(ref placingPosition, out Point hoveringPoint, out Attachable attachable);
 
-            if (!Input.GetMouseButtonDown(0)) return;
+            if (!diagram.clickedOverDiagram) return;
 
             if (!hoveringPoint)
             {
@@ -61,7 +61,7 @@ public class CircleCreator : DiagramEditor
         {
             circle.SetRadius(placingPosition);
 
-            if (!Input.GetMouseButtonDown(0)) return;
+            if (!diagram.clickedOverDiagram) return;
 
             circle.col.enabled = true;
             circle = null;

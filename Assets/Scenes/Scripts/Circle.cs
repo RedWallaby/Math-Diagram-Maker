@@ -14,19 +14,6 @@ public class Circle : Attachable
 
     public Vector3 previousCentre;
 
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void Awake()
     {
         line = GetComponent<LineRenderer>();
@@ -123,5 +110,10 @@ public class Circle : Attachable
             }
         }
         previousCentre = centre.transform.position;
+    }
+
+    public override void ToggleLabel()
+    {
+        throw new System.NotImplementedException();
     }
 }

@@ -44,7 +44,7 @@ public class PointCreator : DiagramEditor
         Attachable attachable = diagram.GetProminentAttachable(ref placingPosition);
         point.gameObject.transform.position = placingPosition;
 
-        if (Input.GetMouseButtonDown(0))
+        if (diagram.clickedOverDiagram)
         {
             if (attachable) attachable.AttachPoint(point);
 

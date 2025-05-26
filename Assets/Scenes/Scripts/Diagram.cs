@@ -17,6 +17,11 @@ public class Diagram : MonoBehaviour
 
     public DiagramEditor currentEditor;
 
+    public RectTransform labelR;
+    public RectTransform editorR;
+
+    public bool clickedOverDiagram;
+
     // Main settings
     [Header("Diagram Settings")]
     [Header("Line Settings")]
@@ -26,17 +31,24 @@ public class Diagram : MonoBehaviour
     [Header("Point Settings")]
     public float pointRadius = 0.3f;
 
-
-
-/*    public enum EditingType
+    public void Update()
     {
-        None,
-        Point,
-        Line,
-        Move
+        if (!Input.GetMouseButtonDown(0))
+        {
+            clickedOverDiagram = false;
+            return;
+        }
+        bool withinLabel = MouseInBounds(labelR.position, labelR.position + new Vector3(labelR.rect.width, -labelR.rect.height) / 100);
+        bool withinEditor = Input.mousePosition.x < editorR.position.x + editorR.rect.width / 2;
+        clickedOverDiagram = !withinLabel && !withinEditor;
     }
-    public EditingType editingType;*/
-    
+
+    public bool MouseInBounds(Vector2 topLeft, Vector2 bottomRight)
+    {
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        return topLeft.x < mousePos.x && mousePos.x < bottomRight.x && mousePos.y < topLeft.y && bottomRight.y < mousePos.y;
+    }
+
     public Point CreateInstantPoint(Vector2 position) {
         GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, transform);
 		Point point = pointObj.GetComponent<Point>();
@@ -108,23 +120,17 @@ public class Diagram : MonoBehaviour
             attachable = GetProminentAttachable(ref position);
         }
     }
-/*
 
-    public T GetAttachableAtPosition<T>(Vector2 position, Func<T, bool> exclusion = null) where T : Attachable
+    public Element GetElement(Vector2 position) // TODO FIX FOR CIRCLE HITBOX
     {
         RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
         foreach (RaycastHit2D hit in hits)
         {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Attachable attachable) && attachable is T)
+            if (hit.collider != null && hit.collider.TryGetComponent(out Element element))
             {
-                if (exclusion != null && exclusion((T) attachable)) continue; // Skip the excluded points
-                if (attachable is Circle) 
-                {
-                    if (Vector2.Distance(((Circle) attachable).centre.position, position) < ((Circle) attachable).radius - lineWidth / 2) continue; // Skip if the point is not within the circles ring
-                }
-                return (T) attachable;
+                return element;
             }
         }
         return null;
-    }*/
+    }
 }

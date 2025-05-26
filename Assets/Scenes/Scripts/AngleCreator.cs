@@ -36,7 +36,7 @@ public class AngleCreator : DiagramEditor
     {
         if (placing == PlacingStage.None) return;
 
-        if (!Input.GetMouseButtonDown(0)) return;
+        if (!diagram.clickedOverDiagram) return;
 
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Line line = diagram.GetProminentAttachable(ref placingPosition) as Line;
