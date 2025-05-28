@@ -30,7 +30,7 @@ public class MoveSelector : DiagramEditor
         if (!moving) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        if (diagram.clickedOverDiagram)
+        if (diagram.clickedOnDiagram)
         {
             selectedPoint = diagram.GetPointAtPosition(placingPosition);
             selectedAttachable = diagram.GetProminentAttachable(ref placingPosition);
@@ -39,21 +39,22 @@ public class MoveSelector : DiagramEditor
         if (selectedPoint != null)
         {
             // Determine if movement is along a line or free movement
-            if (selectedPoint.semiAttatchedLine != null)
+            if (selectedPoint.semiAttachedLine != null)
             {
-                placingPosition = selectedPoint.semiAttatchedLine.GetClosestPosition(placingPosition);
-                selectedPoint.percentage = selectedPoint.semiAttatchedLine.CalculatePercentage(placingPosition);
+                placingPosition = selectedPoint.semiAttachedLine.GetClosestPosition(placingPosition);
+                selectedPoint.percentage = selectedPoint.semiAttachedLine.CalculatePercentage(placingPosition);
             }
             else
             {
                 // Allows points to lock to other points
                 // Using 'local functions' to filter points (not a lambda function)
-                bool exclusion(Point p) => p == selectedPoint || p.semiAttatchedLine != null;
+                bool exclusion(Point p) => p == selectedPoint || p.semiAttachedLine != null;
                 Point newPoint = diagram.GetPointAtPosition(placingPosition, exclusion);
                 if (newPoint != null)
                 {
                     placingPosition = newPoint.position;
                 }
+                diagram.LockPositionToGrid(ref placingPosition);
             }
             selectedPoint.UpdatePoint(placingPosition);
         }
@@ -61,7 +62,16 @@ public class MoveSelector : DiagramEditor
         {
             if (selectedAttachable is Circle circle)
             {
-                circle.SetRadius(placingPosition);
+                float radius = Vector2.Distance(circle.centre.position, placingPosition);
+
+                if (Input.GetKey(KeyCode.LeftShift))
+                {
+                    circle.SetRadius(Mathf.Ceil(radius));
+                }
+                else
+                {
+                    circle.SetRadius(radius);
+                }
             }
         }
 

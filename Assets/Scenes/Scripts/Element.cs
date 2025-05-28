@@ -1,16 +1,39 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public abstract class Element : MonoBehaviour
 {
-    protected TMP_Text labelText;
+    public TMP_Text labelText;
     protected bool isLabelVisible = false;
+    public string labelOverride;
 
-    public void Delete()
+    public abstract string LabelData { get; }
+    public abstract Vector2 LabelPosition { get; }
+
+    public virtual void Delete(Diagram diagram = null)
     {
-        // Remove this element from the scene
         Destroy(gameObject);
     }
 
-    public abstract void ToggleLabel();
+    public void ToggleLabel()
+    {
+        isLabelVisible = !isLabelVisible;
+        labelText.gameObject.SetActive(isLabelVisible);
+        SetLabel();
+    }
+
+    public void SetLabel()
+    {
+        if (labelText == null) return;
+        labelText.transform.position = LabelPosition;
+        if (labelOverride == null || labelOverride == "")
+        {
+            labelText.text = LabelData;
+        }
+        else
+        {
+            labelText.text = labelOverride;
+        }
+    }
 }

@@ -45,20 +45,22 @@ public class LineCreator : DiagramEditor
 
         if (placing == PlacingStage.Line)
         {
+            if (!attachable) diagram.LockPositionToGrid(ref placingPosition);
             line.line.SetPosition(1, placingPosition);
         }
 
-        if (!diagram.clickedOverDiagram) return;
+        if (!diagram.clickedOnDiagram) return;
 
         if (placing == PlacingStage.Point)
         {
             line.line.SetPosition(0, placingPosition);
+            line.line.SetPosition(1, placingPosition); // Set both points to the same position initially (prevents random line from being drawn)
         }
 
         // Create a new point if no point is currently selected
         if (!hoveringPoint)
         {
-            hoveringPoint = diagram.CreateInstantPoint(placingPosition);
+            hoveringPoint = diagram.CreatePoint(placingPosition);
             // Account for if the line is snapping to another line or circle
             if (attachable)
             {
@@ -72,6 +74,9 @@ public class LineCreator : DiagramEditor
 
         if (placing == PlacingStage.Line)
         {
+            diagram.elements.Add(line);
+
+            line.SetPosition();
             line.col.enabled = true;
             line = null;
 

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using static LineCreator;
@@ -42,16 +43,17 @@ public class CircleCreator : DiagramEditor
         {
             diagram.GetProminentFeature(ref placingPosition, out Point hoveringPoint, out Attachable attachable);
 
-            if (!diagram.clickedOverDiagram) return;
+            if (!diagram.clickedOnDiagram) return;
 
             if (!hoveringPoint)
             {
-                hoveringPoint = diagram.CreateInstantPoint(placingPosition);
+                hoveringPoint = diagram.CreatePoint(placingPosition);
                 if (attachable)
                 {
                     attachable.AttachPoint(hoveringPoint);
                 }
             }
+
             circle.centre = hoveringPoint;
             circle.gameObject.transform.position = placingPosition;
             circle.CreateCircle();
@@ -59,9 +61,20 @@ public class CircleCreator : DiagramEditor
         }
         else if (placing == PlacingStage.Line)
         {
-            circle.SetRadius(placingPosition);
+            float radius = Vector2.Distance(circle.centre.position, placingPosition);
 
-            if (!diagram.clickedOverDiagram) return;
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                circle.SetRadius(Mathf.Ceil(radius));
+            }
+            else
+            {
+                circle.SetRadius(radius);
+            }
+
+            if (!diagram.clickedOnDiagram) return;
+
+            diagram.elements.Add(circle);
 
             circle.col.enabled = true;
             circle = null;

@@ -1,15 +1,31 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Line : Attachable
 {
     public Point[] points = new Point[2];
-    public List<Point> attachedPoints = new();
     public LineRenderer line;
     public PolygonCollider2D col;
     public float colliderWidthMultiplier = 2f;
+    public float length => Vector2.Distance(line.GetPosition(0), line.GetPosition(1));
 
-    private void Awake()
+    public override string LabelData
+    {
+        get
+        {
+            return Math.Round(length, 2).ToString();
+        }
+    }
+
+    public override Vector2 LabelPosition     {
+        get
+        {
+            return gameObject.transform.position;
+        }
+    }
+
+    public void Awake()
     {
         line = GetComponent<LineRenderer>();
         if (line == null)
@@ -23,11 +39,16 @@ public class Line : Attachable
         }
     }
 
-    public override void AttachPoint(Point point)
+    public void ForceUpdateLineRenderer()
     {
-        point.percentage = CalculatePercentage(point.position);
-        point.semiAttatchedLine = this;
-        attachedPoints.Add(point);
+        line.SetPosition(0, points[0].transform.position);
+        line.SetPosition(1, points[1].transform.position);
+    }
+
+    public void SetPosition()
+    {
+        transform.position = (line.GetPosition(0) + line.GetPosition(1)) / 2;
+        Debug.Log($"Line position set to: {transform.position}");
     }
 
     // Calculates the distance of a position as a ratio to each end of the line, where 0 is at the start of the line and 1 is at the end
@@ -65,12 +86,13 @@ public class Line : Attachable
         }
 
         // Update the point's position to the average of its point's positions
-        transform.position = (line.GetPosition(0) + line.GetPosition(1)) / 2;
+        SetPosition();
+        SetLabel();
         //Update the line renderer position
         line.SetPosition(index, position);
     }
 
-    //Uses a mathemtical formula to calculate the closest point on a line
+    // Uses a mathemtical formula to calculate the closest point on a line
     public override Vector2 GetClosestPosition(Vector2 point)
     {
         Vector3[] linePoints = new Vector3[line.positionCount];
@@ -164,8 +186,17 @@ public class Line : Attachable
         }
     }
 
-    public override void ToggleLabel()
+    public override void Delete(Diagram diagram = null)
     {
-        throw new System.NotImplementedException();
+        foreach (Point point in attachedPoints)
+        {
+            point.semiAttachedLine = null;
+            point.percentage = 0f;
+        }
+        foreach (Point point in points)
+        {
+            point.attatchedLines.Remove(this);
+        }
+        Destroy(gameObject);
     }
 }

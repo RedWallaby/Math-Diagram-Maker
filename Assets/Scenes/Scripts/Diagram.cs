@@ -1,26 +1,29 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 public class Diagram : MonoBehaviour
 {
-    public List<Point> points = new();
-    public List<Line> lines = new();
+    public List<Element> elements = new();
     public GameObject pointPrefab;
     public GameObject linePrefab;
     public GameObject circlePrefab;
     public GameObject anglePrefab;
-
-    public PointCreator pointCreator;
-    public LineCreator lineCreator;
 
     public DiagramEditor currentEditor;
 
     public RectTransform labelR;
     public RectTransform editorR;
 
-    public bool clickedOverDiagram;
+    public GameObject labelPrefab;
+
+    // Click Data
+    public bool isMovingScreen;
+    private Vector3 lastMousePosition;
+
+    public bool clickedOnDiagram;
 
     // Main settings
     [Header("Diagram Settings")]
@@ -33,14 +36,64 @@ public class Diagram : MonoBehaviour
 
     public void Update()
     {
+        ResolveClickData();
+        if (clickedOnDiagram && Input.GetKey(KeyCode.LeftAlt))
+        {
+            isMovingScreen = true;
+            lastMousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        }
+        if (isMovingScreen)
+        {
+            if (!Input.GetMouseButtonUp(0))
+            {
+                Camera.main.transform.position -= Camera.main.ScreenToWorldPoint(Input.mousePosition) - lastMousePosition;
+            }
+            else
+            {
+                isMovingScreen = false;
+            }
+            lastMousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        }
+
+        if (Input.mouseScrollDelta.y != 0)
+        {
+            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 cameraPosition = Camera.main.transform.position;
+            
+            float originalSize = Camera.main.orthographicSize;
+
+            float d1 = mousePosition.y - cameraPosition.y;
+            float d2 = mousePosition.x - cameraPosition.x;
+
+            Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y * 0.5f, 0.1f, 5f);
+
+            float newSize = Camera.main.orthographicSize;
+            float ratio = newSize / originalSize;
+
+            Camera.main.transform.position = new Vector3(mousePosition.x - d2 * ratio, mousePosition.y - d1 * ratio, -10);
+        }
+    }
+
+    public void ResolveClickData()
+    {
         if (!Input.GetMouseButtonDown(0))
         {
-            clickedOverDiagram = false;
+            clickedOnDiagram = false;
             return;
         }
-        bool withinLabel = MouseInBounds(labelR.position, labelR.position + new Vector3(labelR.rect.width, -labelR.rect.height) / 100);
+
+        bool withinLabel = MouseInBounds(labelR.position, labelR.position + new Vector3(labelR.rect.width * labelR.localScale.x, -labelR.rect.height * labelR.localScale.y) / 100);
         bool withinEditor = Input.mousePosition.x < editorR.position.x + editorR.rect.width / 2;
-        clickedOverDiagram = !withinLabel && !withinEditor;
+        clickedOnDiagram = !withinLabel && !withinEditor;
+    }
+
+    public void LockPositionToGrid(ref Vector2 position)
+    {
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            position.x = Mathf.Round(position.x);
+            position.y = Mathf.Round(position.y);
+        }
     }
 
     public bool MouseInBounds(Vector2 topLeft, Vector2 bottomRight)
@@ -49,10 +102,10 @@ public class Diagram : MonoBehaviour
         return topLeft.x < mousePos.x && mousePos.x < bottomRight.x && mousePos.y < topLeft.y && bottomRight.y < mousePos.y;
     }
 
-    public Point CreateInstantPoint(Vector2 position) {
+    public Point CreatePoint(Vector2 position) {
         GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, transform);
 		Point point = pointObj.GetComponent<Point>();
-		points.Add(point);
+		elements.Add(point);
 
         // Settings
         RectTransform rt = pointObj.GetComponent<RectTransform>();
@@ -62,6 +115,44 @@ public class Diagram : MonoBehaviour
 
         return point;
 	}
+
+    public Line CreateLine()
+    {
+        GameObject lineObj = Instantiate(linePrefab, Vector3.zero, Quaternion.identity, transform);
+        Line line = lineObj.GetComponent<Line>();
+        //line.Awake();
+        elements.Add(line);
+
+        // Settings
+        line.line.startWidth = lineWidth;
+        line.colliderWidthMultiplier = colliderWidthMultiplier;
+
+        return line;
+    }
+
+    public Circle CreateCircle(Vector2 position)
+    {
+        GameObject circleObj = Instantiate(circlePrefab, position, Quaternion.identity, transform);
+        Circle circle = circleObj.GetComponent<Circle>();
+        //circle.Awake();
+        elements.Add(circle);
+
+        // Settings
+        circle.line.startWidth = lineWidth;
+        circle.colliderWidthMultiplier = colliderWidthMultiplier;
+
+        return circle;
+    }
+
+    public Angle CreateAngle()
+    {
+        GameObject angleObj = Instantiate(anglePrefab, Vector3.zero, Quaternion.identity, transform);
+        Angle angle = angleObj.GetComponent<Angle>();
+        //angle.Awake();
+        elements.Add(angle);
+
+        return angle;
+    }
 
     public void SetEditor(DiagramEditor editor)
     {
@@ -121,12 +212,22 @@ public class Diagram : MonoBehaviour
         }
     }
 
-    public Element GetElement(Vector2 position) // TODO FIX FOR CIRCLE HITBOX
+    public Element GetElement(Vector2 position) // Done with multiple functions ensuring correct ordering of checks (point -> attachable -> angle)
     {
+        Point point = GetPointAtPosition(position);
+        if (point != null)
+        {
+            return point;
+        }
+        Attachable attachable = GetProminentAttachable(ref position);
+        if (attachable != null)
+        {
+            return attachable;
+        }
         RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
         foreach (RaycastHit2D hit in hits)
         {
-            if (hit.collider != null && hit.collider.TryGetComponent(out Element element))
+            if (hit.collider != null && hit.collider.TryGetComponent(out Angle element))
             {
                 return element;
             }

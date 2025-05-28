@@ -4,18 +4,19 @@ using UnityEngine.EventSystems;
 
 public class AngleCreator : DiagramEditor
 {
-    public PlacingStage placing;
+    //public PlacingStage placing;
+    public AngleStage placing;
     public Angle angle;
 
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (placing != PlacingStage.None) return;
+        if (placing != AngleStage.None) return;
         diagram.SetEditor(this);
     }
 
     public override void ActivateEdit()
     {
-        placing = PlacingStage.Point;
+        placing = AngleStage.Start;
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         GameObject angleObj = Instantiate(diagram.anglePrefab, mousePosition, Quaternion.identity, diagram.transform);
         angle = angleObj.GetComponent<Angle>();
@@ -29,33 +30,53 @@ public class AngleCreator : DiagramEditor
     {
         Destroy(angle.gameObject);
         angle = null;
-        placing = PlacingStage.None;
+        placing = AngleStage.None;
     }
 
     public void Update()
     {
-        if (placing == PlacingStage.None) return;
-
-        if (!diagram.clickedOverDiagram) return;
+        if (placing == AngleStage.None) return;
 
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Line line = diagram.GetProminentAttachable(ref placingPosition) as Line;
-        if (line == null) return; // No line found, exit early
 
-        if (placing == PlacingStage.Point)
+        if (placing == AngleStage.End)
         {
-            angle.lines[0] = line;
-            placing = PlacingStage.Line;
+            angle.GetAngleData(placingPosition);
+            angle.DrawAngle();
         }
-        else if (placing == PlacingStage.Line)
+
+        if (!diagram.clickedOnDiagram) return;
+
+        Point point = diagram.GetPointAtPosition(placingPosition);
+        if (point == null) return;
+
+        if (placing == AngleStage.Start)
         {
-            if (angle.lines[0] == line || !line.GetSharedPoint(angle.lines[0])) return;
-            angle.lines[1] = line;
+            angle.start = point;
+            placing = AngleStage.Centre;
+        }
+        else if (placing == AngleStage.Centre)
+        {
+            angle.centre = point;
+            placing = AngleStage.End;
+        }
+        else if (placing == AngleStage.End)
+        {
+            diagram.elements.Add(angle);
+
+            angle.end = point;
             angle.GetAngleData();
             angle.DrawAngle();
-            placing = PlacingStage.None;
-            angle = null;
+            placing = AngleStage.None;
             ActivateEdit();
         }
+    }
+
+    public enum AngleStage
+    {
+        None,
+        Start,
+        Centre,
+        End
     }
 }

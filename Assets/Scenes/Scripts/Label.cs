@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Label : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class Label : MonoBehaviour
     public Element element;
 
     public TMP_Text headerText;
+    public TMP_InputField field;
 
     // Setting rectTransform is more computationally effecient than toggling the object, scale 0 = Toggled Off, 1 = Toggled On
     public void SetRect(bool visible)
@@ -25,24 +27,43 @@ public class Label : MonoBehaviour
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             element = diagram.GetElement(mousePos);
             SetRect(element);
+            if (!element) return;
             headerText.text = element.GetType().Name;
+            field.text = element.labelOverride;
             transform.position = mousePos;
         }
     }
 
     public void ToggleElementLabel()
     {
-       if (element == null) return;
-
-
+        if (element == null) return;
+        if (element.labelText == null)
+        {
+            CreateLabelObject();
+        }
+        element.ToggleLabel();
         SetRect(false);
+    }
+
+    public void SetElementLabelOverride(string str)
+    {
+        if (element == null) return;
+        element.labelOverride = str;
+        element.SetLabel();
     }
 
     public void DeleteElement()
     {
         if (element == null) return;
-        element.Delete();
+        element.Delete(diagram);
+        diagram.elements.Remove(element);
         element = null;
         SetRect(false);
+    }
+
+    private void CreateLabelObject()
+    {
+        GameObject labelObj = Instantiate(diagram.labelPrefab, element.gameObject.transform);
+        element.labelText = labelObj.GetComponent<TMP_Text>();
     }
 }

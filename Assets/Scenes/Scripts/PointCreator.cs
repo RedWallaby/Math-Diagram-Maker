@@ -42,20 +42,22 @@ public class PointCreator : DiagramEditor
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         Attachable attachable = diagram.GetProminentAttachable(ref placingPosition);
+
+        if (!attachable) diagram.LockPositionToGrid(ref placingPosition);
+
         point.gameObject.transform.position = placingPosition;
 
-        if (diagram.clickedOverDiagram)
-        {
-            if (attachable) attachable.AttachPoint(point);
+        if (!diagram.clickedOnDiagram) return;
 
-            // Add the point to the diagram
-            diagram.points.Add(point);
-            placing = false;
-            point.col.enabled = true; // Enable the collider
-            point = null;
+        if (attachable) attachable.AttachPoint(point);
 
-            // Keep the placing persistent
-            ActivateEdit();
-        }
+        // Add the point to the diagram
+        diagram.elements.Add(point);
+        placing = false;
+        point.col.enabled = true; // Enable the collider
+        point = null;
+
+        // Keep the placing persistent
+        ActivateEdit();
     }
 }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5964144054789698968}
   - component: {fileID: 1036521323407794915}
   - component: {fileID: 1606848624312604843}
+  - component: {fileID: 2272713038788766833}
   m_Layer: 5
   m_Name: Angle
   m_TagString: Untagged
@@ -49,15 +50,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 486c5f35288463b4b85ddd3ada461f3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  labelText: {fileID: 0}
   line: {fileID: 1606848624312604843}
   startAngle: 0
   angleOffset: 0
   actualRadius: 0
   radius: 0.3
+  col: {fileID: 2272713038788766833}
+  start: {fileID: 0}
   centre: {fileID: 0}
-  lines:
-  - {fileID: 0}
-  - {fileID: 0}
+  end: {fileID: 0}
+  prevStart: {x: 0, y: 0}
+  prevCentre: {x: 0, y: 0}
+  prevEnd: {x: 0, y: 0}
 --- !u!120 &1606848624312604843
 LineRenderer:
   serializedVersion: 2
@@ -165,3 +170,51 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!60 &2272713038788766833
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2875246461081871429}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - []
+  m_UseDelaunayMesh: 0

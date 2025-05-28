@@ -1,18 +1,36 @@
+using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Circle : Attachable
 {
     public LineRenderer line;
     public Point centre;
-    public List<Point> attachedPoints = new();
     public float radius;
     public int accuracy = 360;
     public CircleCollider2D col;
     public float colliderWidthMultiplier = 2f;
 
     public Vector3 previousCentre;
+
+    public override string LabelData
+    {
+        get
+        {
+            return "r = " + Math.Round(radius, 2).ToString();
+        }
+    }
+
+    public override Vector2 LabelPosition
+    {
+        get
+        {
+            if (centre == null) return Vector2.zero;
+            return centre.transform.position + new Vector3(0, radius, 0);
+        }
+    }
 
     public void Awake()
     {
@@ -26,13 +44,6 @@ public class Circle : Attachable
         {
             col = gameObject.AddComponent<CircleCollider2D>();
         }
-    }
-
-    public override void AttachPoint(Point point)
-    {
-        point.percentage = CalculatePercentage(point.position);
-        point.semiAttatchedLine = this;
-        attachedPoints.Add(point);
     }
 
     public override float CalculatePercentage(Vector2 point)
@@ -49,10 +60,8 @@ public class Circle : Attachable
         return new Vector2(x, y);
     }
 
-    // Sets the radius of the circle based on the distance from the centre to the given position
-    public void SetRadius(Vector2 position)
+    public void SetRadius(float radius)
     {
-        float radius = Vector2.Distance(centre.position, position);
         this.radius = radius;
         DrawCircle();
 
@@ -60,6 +69,7 @@ public class Circle : Attachable
         {
             point.UpdatePoint(PositionFromPercentage(point.percentage));
         }
+        SetLabel();
     }
 
     public void CreateCircle()
@@ -99,7 +109,14 @@ public class Circle : Attachable
 
     public void LateUpdate()
     {
-        if (!centre) return;
+        if (!centre)
+        {
+            if (col.enabled)
+            {
+                Delete();
+            }
+            return;
+        }
         if (previousCentre != centre.transform.position)
         {
             transform.position = centre.transform.position;
@@ -112,8 +129,13 @@ public class Circle : Attachable
         previousCentre = centre.transform.position;
     }
 
-    public override void ToggleLabel()
+    public override void Delete(Diagram diagram = null)
     {
-        throw new System.NotImplementedException();
+        foreach (Point point in attachedPoints)
+        {
+            point.semiAttachedLine = null;
+            point.percentage = 0f;
+        }
+        Destroy(gameObject);
     }
 }
