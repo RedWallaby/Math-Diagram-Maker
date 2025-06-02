@@ -1,6 +1,7 @@
 using UnityEngine;
 using static LineCreator;
 using UnityEngine.EventSystems;
+using System.Drawing;
 
 public class AngleCreator : DiagramEditor
 {
@@ -17,13 +18,7 @@ public class AngleCreator : DiagramEditor
     public override void ActivateEdit()
     {
         placing = AngleStage.Start;
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        GameObject angleObj = Instantiate(diagram.anglePrefab, mousePosition, Quaternion.identity, diagram.transform);
-        angle = angleObj.GetComponent<Angle>();
-
-        // Settings
-        //circle.line.startWidth = diagram.lineWidth;
-        //circle.colliderWidthMultiplier = diagram.colliderWidthMultiplier;
+        angle = diagram.CreateAngle();
     }
 
     public override void DeactivateEdit()
@@ -50,6 +45,11 @@ public class AngleCreator : DiagramEditor
         Point point = diagram.GetPointAtPosition(placingPosition);
         if (point == null) return;
 
+        EnterNextAngleStage(point);
+    }
+
+    public void EnterNextAngleStage(Point point)
+    {
         if (placing == AngleStage.Start)
         {
             angle.start = point;
@@ -67,12 +67,11 @@ public class AngleCreator : DiagramEditor
             angle.end = point;
             angle.GetAngleData();
             angle.DrawAngle();
-            placing = AngleStage.None;
             ActivateEdit();
         }
     }
 
-    public enum AngleStage
+	public enum AngleStage
     {
         None,
         Start,

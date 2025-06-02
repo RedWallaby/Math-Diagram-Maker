@@ -74,9 +74,6 @@ public class Circle : Attachable
 
     public void CreateCircle()
     {
-        line.positionCount = accuracy;
-        line.loop = true;
-        previousCentre = centre.transform.position;
         DrawCircle();
     }
 

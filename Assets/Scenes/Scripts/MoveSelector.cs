@@ -35,44 +35,14 @@ public class MoveSelector : DiagramEditor
             selectedPoint = diagram.GetPointAtPosition(placingPosition);
             selectedAttachable = diagram.GetProminentAttachable(ref placingPosition);
         }
-        //Movement Logic
+
         if (selectedPoint != null)
         {
-            // Determine if movement is along a line or free movement
-            if (selectedPoint.semiAttachedLine != null)
-            {
-                placingPosition = selectedPoint.semiAttachedLine.GetClosestPosition(placingPosition);
-                selectedPoint.percentage = selectedPoint.semiAttachedLine.CalculatePercentage(placingPosition);
-            }
-            else
-            {
-                // Allows points to lock to other points
-                // Using 'local functions' to filter points (not a lambda function)
-                bool exclusion(Point p) => p == selectedPoint || p.semiAttachedLine != null;
-                Point newPoint = diagram.GetPointAtPosition(placingPosition, exclusion);
-                if (newPoint != null)
-                {
-                    placingPosition = newPoint.position;
-                }
-                diagram.LockPositionToGrid(ref placingPosition);
-            }
-            selectedPoint.UpdatePoint(placingPosition);
+            AdjustPoint(selectedPoint, placingPosition);
         }
         else if (selectedAttachable != null)
         {
-            if (selectedAttachable is Circle circle)
-            {
-                float radius = Vector2.Distance(circle.centre.position, placingPosition);
-
-                if (Input.GetKey(KeyCode.LeftShift))
-                {
-                    circle.SetRadius(Mathf.Ceil(radius));
-                }
-                else
-                {
-                    circle.SetRadius(radius);
-                }
-            }
+            AdjustAttachable(selectedAttachable, placingPosition);
         }
 
         if (Input.GetMouseButtonUp(0))
@@ -83,6 +53,44 @@ public class MoveSelector : DiagramEditor
             ActivateEdit();
         }
     }
+
+    public void AdjustPoint(Point point, Vector2 newPosition)
+	{
+		// Check if the point is attached to a line
+		if (point.semiAttachedLine != null)
+		{
+			newPosition = point.semiAttachedLine.GetClosestPosition(newPosition);
+			point.percentage = point.semiAttachedLine.CalculatePercentage(newPosition);
+		}
+		else
+		{
+			// Snap to other points if available
+			Point closestPoint = diagram.GetPointAtPosition(newPosition, p => p != point && p.semiAttachedLine == null);
+			if (closestPoint != null)
+			{
+				newPosition = closestPoint.position;
+			}
+			diagram.LockPositionToGrid(ref newPosition);
+		}
+		point.UpdatePoint(newPosition);
+	}
+
+    public void AdjustAttachable(Attachable attachable, Vector2 newPosition) {
+
+		if (attachable is Circle circle)
+		{
+			float radius = Vector2.Distance(circle.centre.position, newPosition);
+
+			if (Input.GetKey(KeyCode.LeftShift))
+			{
+				circle.SetRadius(Mathf.Ceil(radius));
+			}
+			else
+			{
+				circle.SetRadius(radius);
+			}
+		}
+	}   
 
     // Snapping of moved point to line or another point (including all data correct)
 }

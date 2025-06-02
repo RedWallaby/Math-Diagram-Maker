@@ -18,13 +18,8 @@ public class CircleCreator : DiagramEditor
     {
         placing = PlacingStage.Point;
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        GameObject circleObj = Instantiate(diagram.circlePrefab, mousePosition, Quaternion.identity, diagram.transform);
-        circle = circleObj.GetComponent<Circle>();
+        circle = diagram.CreateCircle(mousePosition);
         circle.col.enabled = false; // Disable the collider until placement is confirmed
-
-        // Settings
-        circle.line.startWidth = diagram.lineWidth;
-        circle.colliderWidthMultiplier = diagram.colliderWidthMultiplier;
     }
 
     public override void DeactivateEdit()
@@ -41,44 +36,54 @@ public class CircleCreator : DiagramEditor
 
         if (placing == PlacingStage.Point)
         {
-            diagram.GetProminentFeature(ref placingPosition, out Point hoveringPoint, out Attachable attachable);
-
-            if (!diagram.clickedOnDiagram) return;
-
-            if (!hoveringPoint)
-            {
-                hoveringPoint = diagram.CreatePoint(placingPosition);
-                if (attachable)
-                {
-                    attachable.AttachPoint(hoveringPoint);
-                }
-            }
-
-            circle.centre = hoveringPoint;
-            circle.gameObject.transform.position = placingPosition;
-            circle.CreateCircle();
-            placing = PlacingStage.Line;
+            SetupPoint(placingPosition);
         }
         else if (placing == PlacingStage.Line)
         {
-            float radius = Vector2.Distance(circle.centre.position, placingPosition);
-
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                circle.SetRadius(Mathf.Ceil(radius));
-            }
-            else
-            {
-                circle.SetRadius(radius);
-            }
-
-            if (!diagram.clickedOnDiagram) return;
-
-            diagram.elements.Add(circle);
-
-            circle.col.enabled = true;
-            circle = null;
-            ActivateEdit();
+            AdjustRadius(placingPosition);
         }
     }
+
+    public void SetupPoint(Vector2 position)
+    {
+		diagram.GetProminentFeature(ref position, out Point hoveringPoint, out Attachable attachable);
+
+		if (!diagram.clickedOnDiagram) return;
+
+		if (!hoveringPoint)
+		{
+			hoveringPoint = diagram.CreatePoint(position);
+			if (attachable)
+			{
+				attachable.AttachPoint(hoveringPoint);
+			}
+		}
+
+		circle.centre = hoveringPoint;
+		circle.gameObject.transform.position = position;
+		circle.CreateCircle();
+		placing = PlacingStage.Line;
+	}
+
+    public void AdjustRadius(Vector2 position)
+    {
+		float radius = Vector2.Distance(circle.centre.position, position);
+
+		if (Input.GetKey(KeyCode.LeftShift))
+		{
+			circle.SetRadius(Mathf.Ceil(radius));
+		}
+		else
+		{
+			circle.SetRadius(radius);
+		}
+
+		if (!diagram.clickedOnDiagram) return;
+
+		diagram.elements.Add(circle);
+
+		circle.col.enabled = true;
+		circle = null;
+		ActivateEdit();
+	}
 }
