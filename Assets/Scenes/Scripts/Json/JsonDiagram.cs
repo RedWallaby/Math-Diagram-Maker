@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class JsonDiagram
 {
+    public string name;
+
     public List<JsonPoint> points = new();
     public List<JsonLine> lines = new();
     public List<JsonCircle> circles = new();
@@ -16,6 +18,7 @@ public class JsonDiagram
         public Vector2 position;
         public float percentage;
         public List<int> attachedLineIDs = new();
+        public List<int> circleIDs = new();
         public int semiAttachedLineID;
 
         public JsonPoint(Point point, Dictionary<Element, int> elementToID)
@@ -26,6 +29,10 @@ public class JsonDiagram
             foreach (Line line in point.attatchedLines)
             {
                 attachedLineIDs.Add(elementToID[line]);
+            }
+            foreach (Circle circle in point.circles)
+            {
+                circleIDs.Add(elementToID[circle]);
             }
             if (point.semiAttachedLine != null)
             {

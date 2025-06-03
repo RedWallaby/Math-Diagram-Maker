@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -6,18 +7,25 @@ using UnityEngine.UIElements;
 
 public class Diagram : MonoBehaviour
 {
+    public string diagramName;
+
     public List<Element> elements = new();
     public GameObject pointPrefab;
     public GameObject linePrefab;
     public GameObject circlePrefab;
     public GameObject anglePrefab;
 
+    public GameObject editorMenu;
     public DiagramEditor currentEditor;
+    public DiagramEditor storedEditor;
+    public MoveSelector defaultEditor;
 
     public RectTransform labelR;
     public RectTransform editorR;
 
     public GameObject labelPrefab;
+
+    public bool isEnabled;
 
     // Click Data
     public bool isMovingScreen;
@@ -36,7 +44,10 @@ public class Diagram : MonoBehaviour
 
     public void Update()
     {
+        if (!isEnabled) return;
+
         ResolveClickData();
+
         if (clickedOnDiagram && Input.GetKey(KeyCode.LeftAlt))
         {
             isMovingScreen = true;
@@ -44,6 +55,7 @@ public class Diagram : MonoBehaviour
         }
         if (isMovingScreen)
         {
+            clickedOnDiagram = false;
             if (!Input.GetMouseButtonUp(0))
             {
                 Camera.main.transform.position -= Camera.main.ScreenToWorldPoint(Input.mousePosition) - lastMousePosition;
@@ -76,7 +88,7 @@ public class Diagram : MonoBehaviour
 
     public void ResolveClickData()
     {
-        if (!Input.GetMouseButtonDown(0))
+        if (!Input.GetMouseButtonDown(0) || isMovingScreen)
         {
             clickedOnDiagram = false;
             return;
@@ -105,13 +117,12 @@ public class Diagram : MonoBehaviour
     public Point CreatePoint(Vector2 position) {
         GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, transform);
 		Point point = pointObj.GetComponent<Point>();
-		elements.Add(point);
 
         // Settings
         RectTransform rt = pointObj.GetComponent<RectTransform>();
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, pointRadius * 100);
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, pointRadius * 100);
-        point.GetComponent<CircleCollider2D>().radius = pointRadius * 50;
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, pointRadius * 200);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, pointRadius * 200);
+        point.GetComponent<CircleCollider2D>().radius = pointRadius * 100;
 
         return point;
 	}
@@ -120,8 +131,6 @@ public class Diagram : MonoBehaviour
     {
         GameObject lineObj = Instantiate(linePrefab, Vector3.zero, Quaternion.identity, transform);
         Line line = lineObj.GetComponent<Line>();
-        //line.Awake();
-        elements.Add(line);
 
         // Settings
         line.line.startWidth = lineWidth;
@@ -134,8 +143,7 @@ public class Diagram : MonoBehaviour
     {
         GameObject circleObj = Instantiate(circlePrefab, position, Quaternion.identity, transform);
         Circle circle = circleObj.GetComponent<Circle>();
-        //circle.Awake();
-        elements.Add(circle);
+        circle.line.positionCount = circle.accuracy;
 
         // Settings
         circle.line.startWidth = lineWidth;
@@ -148,21 +156,66 @@ public class Diagram : MonoBehaviour
     {
         GameObject angleObj = Instantiate(anglePrefab, Vector3.zero, Quaternion.identity, transform);
         Angle angle = angleObj.GetComponent<Angle>();
-        //angle.Awake();
-        elements.Add(angle);
 
         return angle;
     }
 
     public void SetEditor(DiagramEditor editor)
     {
+        if (!isEnabled) return; // Do not change editor if the diagram is not enabled
         if (currentEditor == editor) return; // Prevent re-assigning the same editor
         if (currentEditor != null) // Only deactivate if there is an active editor
         {
             currentEditor.DeactivateEdit();
         }
         currentEditor = editor;
+        if (editor == null) return; // If the editor is null, do not activate it
         currentEditor.ActivateEdit();
+    }
+
+    public void CreateNewDiagram()
+    {
+        diagramName = "New Diagram";
+        ClearDiagram();
+    }
+
+    public void ClearDiagram()
+    {
+        while (0 < elements.Count)
+        {
+            elements[0].Delete(this);
+        }
+    }
+
+    // TODO CHANGE NAME TO LOCK EDITOR
+    public void SetEnabled(bool isEnabled) // Sets the enabled state of the diagram's functionality
+    {
+        this.isEnabled = isEnabled;
+        if (!currentEditor) return;
+        if (!isEnabled)
+        {
+            // Store the current editor to reactivate it on enable
+            currentEditor.DeactivateEdit();
+            storedEditor = currentEditor;
+            currentEditor = null;
+        }
+        else
+        {
+            currentEditor = storedEditor;
+            currentEditor.ActivateEdit();
+        }
+    }
+
+    // TODO CHANGE NAME TO FULL ENABLE
+    public void SetActive(bool isActive) // Sets the active state of the diagram object
+    {
+        isEnabled = isActive;
+        editorMenu.SetActive(isActive);
+        if (isActive)
+        {
+            SetEditor(defaultEditor);
+            CentraliseCamera();
+        }
     }
 
     public Point GetPointAtPosition(Vector2 position, Func<Point, bool> exclusion = null)
@@ -233,5 +286,53 @@ public class Diagram : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void CentraliseCamera()
+    {
+        Camera cam = Camera.main;
+        if (elements.Count == 0) return; // No elements to centralise camera on
+        float xSum = 0f;
+        float ySum = 0f;
+        foreach (Element element in elements)
+        {
+            xSum += element.transform.position.x;
+            ySum += element.transform.position.y;
+        }
+        Vector2 centralPosition = new(xSum / elements.Count, ySum / elements.Count);
+        cam.transform.position = new Vector3(centralPosition.x, centralPosition.y, cam.transform.position.z);
+        cam.orthographicSize = 5;
+    }
+
+    public void SetBoundsOnCamera(Camera camera)
+    {
+        if (elements.Count == 0) return; // No elements to set bounds for
+        Vector2 centralObject = elements[0].transform.position;
+        float leftBound = centralObject.x;
+        float rightBound = centralObject.x;
+        float topBound = centralObject.y;
+        float bottomBound = centralObject.y;
+        foreach (Element element in elements)
+        {
+            if (element is Point point)
+            {
+                leftBound = Mathf.Min(leftBound, point.position.x - pointRadius);
+                rightBound = Mathf.Max(rightBound, point.position.x + pointRadius);
+                topBound = Mathf.Max(topBound, point.position.y + pointRadius);
+                bottomBound = Mathf.Min(bottomBound, point.position.y - pointRadius);
+            }
+            else if (element is Circle circle)
+            {
+                float radius = circle.radius + lineWidth;
+                leftBound = Mathf.Min(leftBound, circle.centre.position.x - radius);
+                rightBound = Mathf.Max(rightBound, circle.centre.position.x + radius);
+                topBound = Mathf.Max(topBound, circle.centre.position.y + radius);
+                bottomBound = Mathf.Min(bottomBound, circle.centre.position.y - radius);
+            }
+        }
+        camera.transform.position = new Vector3((leftBound + rightBound) / 2, (topBound + bottomBound) / 2, camera.transform.position.z);
+        float width = rightBound - leftBound;
+        float height = topBound - bottomBound;
+        camera.orthographicSize = Mathf.Max(width / 2, height / 2) * 1.1f; // Set orthographic size based on the larger dimension (multiplied by 1.1 to add padding)
     }
 }

@@ -56,7 +56,6 @@ public class Label : MonoBehaviour
     {
         if (element == null) return;
         element.Delete(diagram);
-        diagram.elements.Remove(element);
         element = null;
         SetRect(false);
     }

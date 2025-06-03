@@ -48,7 +48,6 @@ public class Line : Attachable
     public void SetPosition()
     {
         transform.position = (line.GetPosition(0) + line.GetPosition(1)) / 2;
-        Debug.Log($"Line position set to: {transform.position}");
     }
 
     // Calculates the distance of a position as a ratio to each end of the line, where 0 is at the start of the line and 1 is at the end
@@ -195,8 +194,10 @@ public class Line : Attachable
         }
         foreach (Point point in points)
         {
+            if (!point) continue; // In case the point was already deleted or hasn't been registered yet
             point.attatchedLines.Remove(this);
         }
-        Destroy(gameObject);
+        diagram?.elements.Remove(this);
+        DestroyImmediate(gameObject);
     }
 }

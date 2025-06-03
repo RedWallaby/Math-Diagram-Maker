@@ -24,7 +24,7 @@ public class CircleCreator : DiagramEditor
 
     public override void DeactivateEdit()
     {
-        Destroy(circle.gameObject);
+        circle.Delete();
         circle = null;
         placing = PlacingStage.None;
     }
@@ -53,15 +53,17 @@ public class CircleCreator : DiagramEditor
 		if (!hoveringPoint)
 		{
 			hoveringPoint = diagram.CreatePoint(position);
+            diagram.elements.Add(hoveringPoint);
 			if (attachable)
 			{
 				attachable.AttachPoint(hoveringPoint);
 			}
 		}
 
+        hoveringPoint.circles.Add(circle);
 		circle.centre = hoveringPoint;
 		circle.gameObject.transform.position = position;
-		circle.CreateCircle();
+		circle.DrawCircle();
 		placing = PlacingStage.Line;
 	}
 

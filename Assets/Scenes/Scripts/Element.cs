@@ -13,7 +13,8 @@ public abstract class Element : MonoBehaviour
 
     public virtual void Delete(Diagram diagram = null)
     {
-        Destroy(gameObject);
+        diagram?.elements.Remove(this);
+        DestroyImmediate(gameObject);
     }
 
     public void ToggleLabel()

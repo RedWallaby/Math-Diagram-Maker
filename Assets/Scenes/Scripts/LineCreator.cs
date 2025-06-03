@@ -26,7 +26,7 @@ public class LineCreator : DiagramEditor
 
     public override void DeactivateEdit()
     {
-        Destroy(line.gameObject);
+        line.Delete();
         line = null;
         placing = PlacingStage.None;
     }
@@ -42,7 +42,7 @@ public class LineCreator : DiagramEditor
 			if (!diagram.clickedOnDiagram) return;
 
 			line.line.SetPosition(0, placingPosition);
-			line.line.SetPosition(1, placingPosition); // Set both points to the same position initially (prevents random line from being drawn)
+			line.line.SetPosition(1, placingPosition); // Set both points to the same position initially (prevents line from being drawn to default position [0, 0])
 
 			ProcessLine(placingPosition, hoveringPoint, attachable);
 			placing = PlacingStage.Line;
@@ -70,6 +70,7 @@ public class LineCreator : DiagramEditor
 		if (!hoveringPoint)
 		{
 			hoveringPoint = diagram.CreatePoint(position);
+            diagram.elements.Add(hoveringPoint);
 			// Account for if the line is snapping to another line or circle
 			if (attachable)
 			{

@@ -62,7 +62,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -205,4 +205,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d48aaaf94b920bf4096d7898d723904c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  labelText: {fileID: 0}
+  labelOverride: 
+  attachedPoints: []
+  points:
+  - {fileID: 0}
+  - {fileID: 0}
   line: {fileID: 0}
+  col: {fileID: 0}
+  colliderWidthMultiplier: 2

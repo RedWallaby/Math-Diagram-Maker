@@ -23,7 +23,7 @@ public class AngleCreator : DiagramEditor
 
     public override void DeactivateEdit()
     {
-        Destroy(angle.gameObject);
+        angle.Delete();
         angle = null;
         placing = AngleStage.None;
     }

@@ -23,7 +23,7 @@ public class PointCreator : DiagramEditor
 
     public override void DeactivateEdit()
     {
-        Destroy(point.gameObject);
+        point.Delete();
         point = null;
         placing = false;
     }

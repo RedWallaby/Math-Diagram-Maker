@@ -59,12 +59,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3099ad21ae53f641969ab99ca7def62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  labelText: {fileID: 0}
+  labelOverride: 
+  attachedPoints: []
   line: {fileID: 5695735269369540382}
   centre: {fileID: 0}
-  attachedPoints: []
   radius: 1
   accuracy: 360
   col: {fileID: 0}
+  colliderWidthMultiplier: 2
+  previousCentre: {x: 0, y: 0, z: 0}
 --- !u!120 &5695735269369540382
 LineRenderer:
   serializedVersion: 2
@@ -89,7 +93,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -168,7 +172,7 @@ LineRenderer:
     generateLightingData: 0
   m_MaskInteraction: 0
   m_UseWorldSpace: 1
-  m_Loop: 0
+  m_Loop: 1
   m_ApplyActiveColorSpace: 1
 --- !u!58 &535928142688238488
 CircleCollider2D:

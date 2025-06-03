@@ -65,7 +65,7 @@ public class MoveSelector : DiagramEditor
 		else
 		{
 			// Snap to other points if available
-			Point closestPoint = diagram.GetPointAtPosition(newPosition, p => p != point && p.semiAttachedLine == null);
+			Point closestPoint = diagram.GetPointAtPosition(newPosition, p => p == point || p.semiAttachedLine != null);
 			if (closestPoint != null)
 			{
 				newPosition = closestPoint.position;

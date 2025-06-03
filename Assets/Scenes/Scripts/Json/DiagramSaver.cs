@@ -1,5 +1,9 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using static JsonDiagram;
 
 public class DiagramSaver : MonoBehaviour
@@ -8,45 +12,59 @@ public class DiagramSaver : MonoBehaviour
 
     Dictionary<Element, int> elementToIdMap = new();
 
-    public void Update()
+    public TMP_InputField inputField;
+
+    public void OpenMenu() // SET THE TITLE OF THE MENU TO THE CURRENT NAME OF THE DIAGRAM THEN UPDATE IT ONCE THE PROJECT IS SAVED
     {
-        if (Input.GetKeyDown(KeyCode.S))
+        inputField.text = diagram.diagramName;
+    } // TODO ALSO MAKE IT SO THE INPUT FIELD GIVES FEEDBACK FROM USER INPUT
+
+
+    public void SaveCurrentDiagram() // TODO WE CAN IMPLEMENT SANITATION HERE
+    {
+        string name = inputField.text;
+        if (string.IsNullOrEmpty(name)) return; //<------------
+
+        // Rename the file if the name has changed
+        string currentPath = Application.persistentDataPath + $"/{diagram.diagramName}.json";
+        if (File.Exists(currentPath) && name != diagram.diagramName)
         {
-            SaveJsonDiagram();
+            File.Move(currentPath, Application.persistentDataPath + $"/{name}.json");
         }
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            LoadJsonDiagram();
-        }
+
+        diagram.diagramName = name;
+        SaveJsonDiagram(inputField.text);
     }
 
-
-    public void SaveJsonDiagram()
+    public JsonDiagram GetJsonDiagram(string path)
     {
-        JsonDiagram jsonDiagram = SaveDiagram(this.diagram);
+        string json = File.ReadAllText(path);
+        return JsonUtility.FromJson<JsonDiagram>(json);
+    }
+
+    public void SaveJsonDiagram(string name)
+    {
+        JsonDiagram jsonDiagram = SaveDiagram();
+        jsonDiagram.name = name;
         string diagram = JsonUtility.ToJson(jsonDiagram, true);
-        Debug.Log("saving: " + diagram);
-        Debug.Log("Elements: " + jsonDiagram.points.Count);
-        string filePath = Application.persistentDataPath + "/diagram.json";
-        System.IO.File.WriteAllText(filePath, diagram);
+        string filePath = Application.persistentDataPath + $"/{name}.json";
+        File.WriteAllText(filePath, diagram);
         Debug.Log(filePath);
-
     }
 
-    public void LoadJsonDiagram()
+    public JsonDiagram LoadJsonDiagram(string path)
     {
-        string filePath = Application.persistentDataPath + "/diagram.json";
-        if (System.IO.File.Exists(filePath))
+        if (File.Exists(path))
         {
-            string json = System.IO.File.ReadAllText(filePath);
-            JsonDiagram jsonDiagram = JsonUtility.FromJson<JsonDiagram>(json);
-            Debug.Log("Loaded diagram: " + json);
-            Debug.Log("Elements: " + jsonDiagram.points.Count);
-            LoadFromDiagram(jsonDiagram, diagram);
+            JsonDiagram jsonDiagram = GetJsonDiagram(path);
+            LoadFromDiagram(jsonDiagram);
+            Debug.Log("Loaded diagram name: " + jsonDiagram.name);
+            return jsonDiagram;
         }
         else
         {
-            Debug.LogError("File not found: " + filePath);
+            Debug.LogError("File not found: " + path);
+            return null;
         }
     }
 
@@ -64,9 +82,8 @@ public class DiagramSaver : MonoBehaviour
         }
     }
 
-    public JsonDiagram SaveDiagram(Diagram diagram)
+    public JsonDiagram SaveDiagram() // TODO IMPLEMENT LABEL SAVING
     {
-        this.diagram = diagram;
         FillDictionary();
 
         JsonDiagram jsonDiagram = new()
@@ -100,30 +117,32 @@ public class DiagramSaver : MonoBehaviour
         return jsonDiagram;
     }
 
-    public void LoadFromDiagram(JsonDiagram jsonDiagram, Diagram diagram)
+    public void LoadFromDiagram(JsonDiagram jsonDiagram)
     {
-        // Reset Diagram
-        foreach (Element element in diagram.elements)
-        {
-            if (element != null)
-            {
-                Debug.Log("Deleting element: " + element.gameObject.name);
-                element.Delete();
-            }
-            else
-            {
-                Debug.Log("Found null element in diagram elements list.");
-            }
-        }
-        diagram.elements.Clear();
+        diagram.diagramName = jsonDiagram.name;
+
+        diagram.ClearDiagram();
 
         Dictionary<int, Point> idToPointMap = new();
+        LoadPoints(jsonDiagram.points, idToPointMap, jsonDiagram);
+        LoadLines(jsonDiagram.lines, idToPointMap, jsonDiagram);
+        LoadCircles(jsonDiagram.circles, idToPointMap, jsonDiagram);
+        LoadAngles(jsonDiagram.angles, idToPointMap, jsonDiagram);
+    }
+
+    public void LoadPoints(List<JsonPoint> jsonPoints, Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
+    {
         foreach (JsonPoint jsonPoint in jsonDiagram.points)
         {
             Point point = diagram.CreatePoint(jsonPoint.position);
             point.percentage = jsonPoint.percentage;
             idToPointMap[jsonPoint.id] = point;
+            diagram.elements.Add(point);
         }
+    }
+
+    public void LoadLines(List<JsonLine> jsonLines, Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
+    {
         foreach (JsonLine jsonLine in jsonDiagram.lines)
         {
             Line line = diagram.CreateLine();
@@ -139,25 +158,39 @@ public class DiagramSaver : MonoBehaviour
             {
                 line.AttachPoint(idToPointMap[pointID]);
             }
+            diagram.elements.Add(line);
         }
+    }
+
+    public void LoadCircles(List<JsonCircle> jsonCircles, Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
+    {
         foreach (JsonCircle jsonCircle in jsonDiagram.circles)
         {
             Point point = idToPointMap[jsonCircle.centreID];
             Circle circle = diagram.CreateCircle(point.position);
             circle.centre = point;
+            point.circles.Add(circle);
             foreach (int pointID in jsonCircle.attachedPointIDs)
             {
                 circle.AttachPoint(idToPointMap[pointID]);
             }
+
             circle.radius = jsonCircle.radius;
-            circle.CreateCircle();
+            circle.DrawCircle();
+            diagram.elements.Add(circle);
         }
+    }
+
+    public void LoadAngles(List<JsonAngle> jsonAngles, Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
+    {
         foreach (JsonAngle jsonAngle in jsonDiagram.angles)
         {
             Angle angle = diagram.CreateAngle();
             angle.start = idToPointMap[jsonAngle.startID];
             angle.centre = idToPointMap[jsonAngle.centreID];
             angle.end = idToPointMap[jsonAngle.endID];
+            diagram.elements.Add(angle);
+            angle.transform.position = angle.centre.position;
         }
     }
 }
