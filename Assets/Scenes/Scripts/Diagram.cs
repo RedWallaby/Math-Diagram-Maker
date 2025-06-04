@@ -19,6 +19,7 @@ public class Diagram : MonoBehaviour
     public DiagramEditor currentEditor;
     public DiagramEditor storedEditor;
     public MoveSelector defaultEditor;
+    public Label label;
 
     public RectTransform labelR;
     public RectTransform editorR;
@@ -42,7 +43,7 @@ public class Diagram : MonoBehaviour
     [Header("Point Settings")]
     public float pointRadius = 0.3f;
 
-    public void Update()
+    public void Update() // TODO (MAYBE) CONVERT DIAGRAM EDITOR'S UPDATE FUNCTIONS TO TICK() WHICH IS CALLED FROM HERE
     {
         if (!isEnabled) return;
 
@@ -77,12 +78,14 @@ public class Diagram : MonoBehaviour
             float d1 = mousePosition.y - cameraPosition.y;
             float d2 = mousePosition.x - cameraPosition.x;
 
-            Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y * 0.5f, 0.1f, 5f);
+            Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y * 0.5f, 0.1f, 20f);
 
             float newSize = Camera.main.orthographicSize;
             float ratio = newSize / originalSize;
 
             Camera.main.transform.position = new Vector3(mousePosition.x - d2 * ratio, mousePosition.y - d1 * ratio, -10);
+
+            label.UpdateRect();
         }
     }
 
@@ -173,12 +176,6 @@ public class Diagram : MonoBehaviour
         currentEditor.ActivateEdit();
     }
 
-    public void CreateNewDiagram()
-    {
-        diagramName = "New Diagram";
-        ClearDiagram();
-    }
-
     public void ClearDiagram()
     {
         while (0 < elements.Count)
@@ -187,10 +184,10 @@ public class Diagram : MonoBehaviour
         }
     }
 
-    // TODO CHANGE NAME TO LOCK EDITOR
-    public void SetEnabled(bool isEnabled) // Sets the enabled state of the diagram's functionality
+    public void LockEditor(bool isEnabled) // Sets the enabled state of the diagram's functionality
     {
         this.isEnabled = isEnabled;
+        label.SetRect(false);
         if (!currentEditor) return;
         if (!isEnabled)
         {
@@ -206,7 +203,6 @@ public class Diagram : MonoBehaviour
         }
     }
 
-    // TODO CHANGE NAME TO FULL ENABLE
     public void SetActive(bool isActive) // Sets the active state of the diagram object
     {
         isEnabled = isActive;

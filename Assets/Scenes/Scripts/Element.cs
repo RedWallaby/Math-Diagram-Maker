@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 public abstract class Element : MonoBehaviour
 {
     public TMP_Text labelText;
-    protected bool isLabelVisible = false;
+    public bool isLabelVisible = false;
     public string labelOverride;
 
     public abstract string LabelData { get; }

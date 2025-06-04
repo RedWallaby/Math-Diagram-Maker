@@ -11,10 +11,12 @@ public class Label : MonoBehaviour
 
     public TMP_Text headerText;
     public TMP_InputField field;
+    public bool isVisible = true;
 
     // Setting rectTransform is more computationally effecient than toggling the object, scale 0 = Toggled Off, 1 = Toggled On
     public void SetRect(bool visible)
     {
+        isVisible = visible;
         float scale = visible ? 1f : 0f;
         rect.localScale = new Vector3(scale, scale, 1f);
     }
@@ -22,7 +24,7 @@ public class Label : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(1) && diagram.isEnabled)
         {
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             element = diagram.GetElement(mousePos);
@@ -31,7 +33,15 @@ public class Label : MonoBehaviour
             headerText.text = element.GetType().Name;
             field.text = element.labelOverride;
             transform.position = mousePos;
+            UpdateRect();
         }
+    }
+
+    public void UpdateRect()
+    {
+        if (!isVisible) return;
+        float size = Camera.main.orthographicSize / 5;
+        rect.localScale = new Vector3(size, size, 1f);
     }
 
     public void ToggleElementLabel()
@@ -39,7 +49,7 @@ public class Label : MonoBehaviour
         if (element == null) return;
         if (element.labelText == null)
         {
-            CreateLabelObject();
+            CreateLabelObject(element);
         }
         element.ToggleLabel();
         SetRect(false);
@@ -60,7 +70,7 @@ public class Label : MonoBehaviour
         SetRect(false);
     }
 
-    private void CreateLabelObject()
+    public void CreateLabelObject(Element element)
     {
         GameObject labelObj = Instantiate(diagram.labelPrefab, element.gameObject.transform);
         element.labelText = labelObj.GetComponent<TMP_Text>();

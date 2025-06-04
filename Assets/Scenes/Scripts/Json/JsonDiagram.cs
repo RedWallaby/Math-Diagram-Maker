@@ -12,7 +12,14 @@ public class JsonDiagram
 
 
     [System.Serializable]
-    public class JsonPoint
+    public class JsonElement
+    {
+        public bool isLabelVisible;
+        public string labelOverride;
+    }
+
+    [System.Serializable]
+    public class JsonPoint : JsonElement
     {
         public int id;
         public Vector2 position;
@@ -42,11 +49,13 @@ public class JsonDiagram
             {
                 semiAttachedLineID = -1;
             }
+            isLabelVisible = point.isLabelVisible;
+            labelOverride = point.labelOverride;
         }
     }
 
     [System.Serializable]
-    public class JsonLine
+    public class JsonLine : JsonElement
     {
         public int[] pointIDs = new int[2];
         public List<int> attachedPointIDs = new();
@@ -61,11 +70,13 @@ public class JsonDiagram
             {
                 attachedPointIDs.Add(elementToID[point]);
             }
+            isLabelVisible = line.isLabelVisible;
+            labelOverride = line.labelOverride;
         }
     }
 
     [System.Serializable]
-    public class JsonCircle
+    public class JsonCircle : JsonElement
     {
         public int centreID;
         public List<int> attachedPointIDs = new();
@@ -79,11 +90,13 @@ public class JsonDiagram
                 attachedPointIDs.Add(elementToID[point]);
             }
             radius = circle.radius;
+            isLabelVisible = circle.isLabelVisible;
+            labelOverride = circle.labelOverride;
         }
     }
 
     [System.Serializable]
-    public class JsonAngle
+    public class JsonAngle : JsonElement
     {
         public int startID;
         public int centreID;
@@ -94,6 +107,8 @@ public class JsonDiagram
             startID = elementToID[angle.start];
             centreID = elementToID[angle.centre];
             endID = elementToID[angle.end];
+            isLabelVisible = angle.isLabelVisible;
+            labelOverride = angle.labelOverride;
         }
     }
 
