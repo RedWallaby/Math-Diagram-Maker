@@ -9,46 +9,69 @@ public class Diagram : MonoBehaviour
 {
     public string diagramName;
 
+    [Header("Main Elements")]
     public List<Element> elements = new();
     public GameObject pointPrefab;
     public GameObject linePrefab;
     public GameObject circlePrefab;
     public GameObject anglePrefab;
 
+    [Header("Editor Data")]
     public GameObject editorMenu;
-    public DiagramEditor currentEditor;
-    public DiagramEditor storedEditor;
-    public MoveSelector defaultEditor;
-    public Label label;
-
-    public RectTransform labelR;
     public RectTransform editorR;
+    public MoveSelector defaultEditor;
+    private DiagramEditor currentEditor;
+    private DiagramEditor storedEditor;
 
+    [Header("Label Data")]
+    public Label label;
+    public RectTransform labelR;
     public GameObject labelPrefab;
 
+    [Header("Other Data")]
+    public Camera textureCamera;
+    public Notification notification;
     public bool isEnabled;
-
-    // Click Data
-    public bool isMovingScreen;
+    public bool clickedOnDiagram;
+    private bool isMovingScreen;
     private Vector3 lastMousePosition;
 
-    public bool clickedOnDiagram;
-
-    // Main settings
     [Header("Diagram Settings")]
+    [Header("Point Settings")]
+    public float pointRadius = 0.3f;
+
     [Header("Line Settings")]
     public float lineWidth = 0.075f;
     public float colliderWidthMultiplier = 2f;
 
-    [Header("Point Settings")]
-    public float pointRadius = 0.3f;
+    [Header("Circle Settings")]
+    public int circleAccuracy = 64;
+    public float circleWidth = 0.075f;
+    public float circleColliderWidthMultiplier = 2f;
 
-    public void Update() // TODO (MAYBE) CONVERT DIAGRAM EDITOR'S UPDATE FUNCTIONS TO TICK() WHICH IS CALLED FROM HERE
+    [Header("Angle Settings")]
+    public float angleWidth = 0.05f;
+
+    [Header("General Settings")]
+    public float gridSize = 1f;
+
+    /// <summary>
+    /// Runs the main program loop
+    /// </summary>
+    /// <remarks>
+    /// Resolves click data to determine if the user clicked on the diagram or not
+    /// Allows for altering the camera's position and zoom level
+    /// </remarks>
+    public void Update()
     {
         if (!isEnabled) return;
 
         ResolveClickData();
 
+        if (currentEditor != null)
+        {
+            currentEditor.Tick();
+        }
         if (clickedOnDiagram && Input.GetKey(KeyCode.LeftAlt))
         {
             isMovingScreen = true;
@@ -56,37 +79,46 @@ public class Diagram : MonoBehaviour
         }
         if (isMovingScreen)
         {
-            clickedOnDiagram = false;
-            if (!Input.GetMouseButtonUp(0))
-            {
-                Camera.main.transform.position -= Camera.main.ScreenToWorldPoint(Input.mousePosition) - lastMousePosition;
-            }
-            else
-            {
-                isMovingScreen = false;
-            }
-            lastMousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            MoveScreen();
         }
-
         if (Input.mouseScrollDelta.y != 0)
         {
-            Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector2 cameraPosition = Camera.main.transform.position;
-            
-            float originalSize = Camera.main.orthographicSize;
-
-            float d1 = mousePosition.y - cameraPosition.y;
-            float d2 = mousePosition.x - cameraPosition.x;
-
-            Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y * 0.5f, 0.1f, 20f);
-
-            float newSize = Camera.main.orthographicSize;
-            float ratio = newSize / originalSize;
-
-            Camera.main.transform.position = new Vector3(mousePosition.x - d2 * ratio, mousePosition.y - d1 * ratio, -10);
-
-            label.UpdateRect();
+            Zoom();
         }
+    }
+
+    public void MoveScreen()
+    {
+        clickedOnDiagram = false;
+        if (!Input.GetMouseButtonUp(0))
+        {
+            Camera.main.transform.position -= Camera.main.ScreenToWorldPoint(Input.mousePosition) - lastMousePosition;
+        }
+        else
+        {
+            isMovingScreen = false;
+        }
+        lastMousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    public void Zoom()
+    {
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 cameraPosition = Camera.main.transform.position;
+
+        float originalSize = Camera.main.orthographicSize;
+
+        float d1 = mousePosition.y - cameraPosition.y;
+        float d2 = mousePosition.x - cameraPosition.x;
+
+        Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y * 0.5f, 0.1f, 20f);
+
+        float newSize = Camera.main.orthographicSize;
+        float ratio = newSize / originalSize;
+
+        Camera.main.transform.position = new Vector3(mousePosition.x - d2 * ratio, mousePosition.y - d1 * ratio, -10);
+
+        label.UpdateRect();
     }
 
     public void ResolveClickData()
@@ -102,20 +134,87 @@ public class Diagram : MonoBehaviour
         clickedOnDiagram = !withinLabel && !withinEditor;
     }
 
-    public void LockPositionToGrid(ref Vector2 position)
-    {
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            position.x = Mathf.Round(position.x);
-            position.y = Mathf.Round(position.y);
-        }
-    }
-
+    /// <summary>
+    /// Determines if the mouse is within the bounds of the given rectangle defined by topLeft and bottomRight corners
+    /// </summary>
+    /// <param name="topLeft">The top-left-most world space position of the rectangle</param>
+    /// <param name="bottomRight">The bottom-right-most world space position of the rectangle</param>
+    /// <returns>If the moust is within the defined rectangle</returns>
     public bool MouseInBounds(Vector2 topLeft, Vector2 bottomRight)
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         return topLeft.x < mousePos.x && mousePos.x < bottomRight.x && mousePos.y < topLeft.y && bottomRight.y < mousePos.y;
     }
+
+    /// <summary>
+    /// Sets the editor for the diagram for the user to interact with the diagram elements
+    /// </summary>
+    /// <param name="editor">The <c>DiagramEditor</c> to set as the current editor</param>
+    public void SetEditor(DiagramEditor editor)
+    {
+        if (!isEnabled) return; // Do not change editor if the diagram is not enabled
+        if (currentEditor) // Only deactivate if there is an active editor
+        {
+            currentEditor.DeactivateEdit();
+            notification.SetNotification(editor.NotificationText);
+        }
+        currentEditor = editor;
+        currentEditor.ActivateEdit();
+    }
+
+    public void OpenNewDiagram()
+    {
+        diagramName = string.Empty;
+        ResetDiagram();
+        Camera.main.transform.position = new Vector3(0, 0, -10); // Reset camera position
+    }
+
+    public void ResetDiagram()
+    {
+        while (0 < elements.Count)
+        {
+            elements[0].Delete(this);
+        }
+    }
+
+    /// <summary>
+    /// Locks the diagram from being edited or interacted with
+    /// Stores and reactivates the current editor
+    /// </summary>
+    public void LockEditor(bool isEnabled)
+    {
+        this.isEnabled = isEnabled;
+        label.SetRect(false);
+        if (!isEnabled)
+        {
+            if (!currentEditor) return;
+            // Store the current editor to reactivate it on enable
+            currentEditor.DeactivateEdit();
+            storedEditor = currentEditor;
+            currentEditor = null;
+        }
+        else
+        {
+            if (!storedEditor) return;
+            currentEditor = storedEditor;
+            currentEditor.ActivateEdit();
+        }
+    }
+
+    /// <summary>
+    /// Hides and shows the editor menu and locks the diagram from being edited or interacted with
+    /// </summary>
+    public void SetActive(bool isActive)
+    {
+        isEnabled = isActive;
+        editorMenu.SetActive(isActive);
+        if (isActive)
+        {
+            SetEditor(defaultEditor);
+            CentraliseCamera();
+        }
+    }
+
 
     public Point CreatePoint(Vector2 position) {
         GameObject pointObj = Instantiate(pointPrefab, position, Quaternion.identity, transform);
@@ -149,8 +248,9 @@ public class Diagram : MonoBehaviour
         circle.line.positionCount = circle.accuracy;
 
         // Settings
-        circle.line.startWidth = lineWidth;
-        circle.colliderWidthMultiplier = colliderWidthMultiplier;
+        circle.accuracy = circleAccuracy;
+        circle.line.startWidth = circleWidth;
+        circle.colliderWidthMultiplier = circleColliderWidthMultiplier;
 
         return circle;
     }
@@ -160,60 +260,18 @@ public class Diagram : MonoBehaviour
         GameObject angleObj = Instantiate(anglePrefab, Vector3.zero, Quaternion.identity, transform);
         Angle angle = angleObj.GetComponent<Angle>();
 
+        // Settings
+        angle.line.startWidth = angleWidth;
+
         return angle;
     }
 
-    public void SetEditor(DiagramEditor editor)
-    {
-        if (!isEnabled) return; // Do not change editor if the diagram is not enabled
-        if (currentEditor == editor) return; // Prevent re-assigning the same editor
-        if (currentEditor != null) // Only deactivate if there is an active editor
-        {
-            currentEditor.DeactivateEdit();
-        }
-        currentEditor = editor;
-        if (editor == null) return; // If the editor is null, do not activate it
-        currentEditor.ActivateEdit();
-    }
-
-    public void ClearDiagram()
-    {
-        while (0 < elements.Count)
-        {
-            elements[0].Delete(this);
-        }
-    }
-
-    public void LockEditor(bool isEnabled) // Sets the enabled state of the diagram's functionality
-    {
-        this.isEnabled = isEnabled;
-        label.SetRect(false);
-        if (!currentEditor) return;
-        if (!isEnabled)
-        {
-            // Store the current editor to reactivate it on enable
-            currentEditor.DeactivateEdit();
-            storedEditor = currentEditor;
-            currentEditor = null;
-        }
-        else
-        {
-            currentEditor = storedEditor;
-            currentEditor.ActivateEdit();
-        }
-    }
-
-    public void SetActive(bool isActive) // Sets the active state of the diagram object
-    {
-        isEnabled = isActive;
-        editorMenu.SetActive(isActive);
-        if (isActive)
-        {
-            SetEditor(defaultEditor);
-            CentraliseCamera();
-        }
-    }
-
+    /// <summary>
+    /// Gets the first point at the given position, excluding points that match the exclusion criteria
+    /// </summary>
+    /// <param name="position">The world space postion to check</param>
+    /// <param name="exclusion">Exclusion criteria to remove certain points from the check</param>
+    /// <returns>The <c>Point</c> at the given position</returns>
     public Point GetPointAtPosition(Vector2 position, Func<Point, bool> exclusion = null)
     {
         RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
@@ -228,7 +286,11 @@ public class Diagram : MonoBehaviour
         return null;
     }
 
-    // Gives first found feature (point/line/circle) on a certain position (giving a priority of point -> line / circle, hence the 2 different loops)
+    /// <summary>
+    /// Gives the first attachable at the given position
+    /// </summary>
+    /// <param name="position">The world space position to check</param>
+    /// <returns>The <c>Attachable</c> at the given position</returns>
     public Attachable GetProminentAttachable(ref Vector2 position)
     {
         RaycastHit2D[] hits = Physics2D.RaycastAll(position, Vector2.zero);
@@ -247,6 +309,12 @@ public class Diagram : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// Gets the most prominent feature at the given position (point > attachable)
+    /// </summary>
+    /// <param name="position">The world space position to check</param>
+    /// <param name="point">Returns the <c>Point</c> at the given position</param>
+    /// <param name="attachable">Returns the <c>Attachable</c> at the given position</param>
     public void GetProminentFeature(ref Vector2 position, out Point point, out Attachable attachable)
     {
         point = GetPointAtPosition(position);
@@ -261,6 +329,11 @@ public class Diagram : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Gets the highest priority element at the given position (point > attachable > angle)
+    /// </summary>
+    /// <param name="position">The world space position to check</param>
+    /// <returns>The <c>Element</c> at the given position</returns>
     public Element GetElement(Vector2 position) // Done with multiple functions ensuring correct ordering of checks (point -> attachable -> angle)
     {
         Point point = GetPointAtPosition(position);
@@ -284,6 +357,18 @@ public class Diagram : MonoBehaviour
         return null;
     }
 
+    public void LockPositionToGrid(ref Vector2 position)
+    {
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            position.x = Mathf.Round(position.x / gridSize) * gridSize;
+            position.y = Mathf.Round(position.y / gridSize) * gridSize;
+        }
+    }
+
+    /// <summary>
+    /// Sets the main camera to the average position of all elements in the diagram
+    /// </summary>
     public void CentraliseCamera()
     {
         Camera cam = Camera.main;
@@ -300,9 +385,15 @@ public class Diagram : MonoBehaviour
         cam.orthographicSize = 5;
     }
 
-    public void SetBoundsOnCamera(Camera camera)
+    /// <summary>
+    /// Sets the bounds of the texture camera based on the furthest positions of all elements in the diagram
+    /// </summary>
+    /// <remarks>
+    /// Camera size is clamped to a minimum of 5 and a maximum of 25 and is set to cover all elements with a 10% padding
+    /// </remarks>
+    public void SetBoundsOnTextureCamera()
     {
-        if (elements.Count == 0) return; // No elements to set bounds for
+        if (elements.Count == 0) return;
         Vector2 centralObject = elements[0].transform.position;
         float leftBound = centralObject.x;
         float rightBound = centralObject.x;
@@ -326,9 +417,9 @@ public class Diagram : MonoBehaviour
                 bottomBound = Mathf.Min(bottomBound, circle.centre.position.y - radius);
             }
         }
-        camera.transform.position = new Vector3((leftBound + rightBound) / 2, (topBound + bottomBound) / 2, camera.transform.position.z);
+        textureCamera.transform.position = new Vector3((leftBound + rightBound) / 2, (topBound + bottomBound) / 2, textureCamera.transform.position.z);
         float width = rightBound - leftBound;
         float height = topBound - bottomBound;
-        camera.orthographicSize = Mathf.Max(width / 2, height / 2) * 1.1f; // Set orthographic size based on the larger dimension (multiplied by 1.1 to add padding)
+        textureCamera.orthographicSize = Mathf.Clamp(Mathf.Max(width / 2, height / 2) * 1.1f, 5, 25);
     }
 }

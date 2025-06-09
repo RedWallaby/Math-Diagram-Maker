@@ -2,28 +2,13 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 // MAYBE MAKE ABSTRACT
-public class DiagramEditor : MonoBehaviour, IPointerClickHandler
+public abstract class DiagramEditor : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField]
     protected Diagram diagram;
-
-    public virtual void OnPointerClick(PointerEventData eventData)
-    {
-        // This method can be overridden in derived classes
-    }
-
-    public virtual void ActivateEdit()
-    {
-        // This method can be overridden in derived classes
-    }
-
-    public virtual void DeactivateEdit()
-    {
-        // This method can be overridden in derived classes
-    }
-
-    /*public virtual void Update()
-    {
-        //Use this for detection of mouse cursor being in correct area
-    }*/
+    public abstract string NotificationText { get; }
+    public abstract void OnPointerClick(PointerEventData eventData);
+    public abstract void ActivateEdit();
+    public abstract void DeactivateEdit();
+    public abstract void Tick();
 }

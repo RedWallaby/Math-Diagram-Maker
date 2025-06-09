@@ -8,16 +8,16 @@ public class MoveSelector : DiagramEditor
     public Point selectedPoint;
     public Attachable selectedAttachable;
 
+    public override string NotificationText => "Select and drag a point or circle";
+
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (moving) return;
-        ActivateEdit();
+        diagram.SetEditor(this);
     }
 
     public override void ActivateEdit()
     {
         moving = true;
-        diagram.SetEditor(this);
     }
 
     public override void DeactivateEdit()
@@ -25,9 +25,8 @@ public class MoveSelector : DiagramEditor
         moving = false;
     }
 
-    public void Update()
+    public override void Tick()
     {
-        if (!moving) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         if (diagram.clickedOnDiagram)
@@ -54,6 +53,12 @@ public class MoveSelector : DiagramEditor
         }
     }
 
+    /// <summary>
+    /// Adjusts the position of the given point, snapping it to the closest line or point if necessary
+    /// </summary>
+    /// <remarks>
+    /// If the point is on a semi-attached line, it will snap to the closest position on that line.
+    /// </remarks>
     public void AdjustPoint(Point point, Vector2 newPosition)
 	{
 		// Check if the point is attached to a line
@@ -75,6 +80,11 @@ public class MoveSelector : DiagramEditor
 		point.UpdatePoint(newPosition);
 	}
 
+    /// <summary>
+    /// Modifies the given <c>Circle</c> object's radius based on the new position
+    /// </summary>
+    /// <param name="attachable"></param>
+    /// <param name="newPosition"></param>
     public void AdjustAttachable(Attachable attachable, Vector2 newPosition) {
 
 		if (attachable is Circle circle)
@@ -91,6 +101,4 @@ public class MoveSelector : DiagramEditor
 			}
 		}
 	}   
-
-    // Snapping of moved point to line or another point (including all data correct)
 }

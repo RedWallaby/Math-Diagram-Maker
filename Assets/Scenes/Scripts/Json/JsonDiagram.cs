@@ -24,8 +24,7 @@ public class JsonDiagram
         public int id;
         public Vector2 position;
         public float percentage;
-        public List<int> attachedLineIDs = new();
-        public List<int> circleIDs = new();
+        public List<int> elementIDs = new();
         public int semiAttachedLineID;
 
         public JsonPoint(Point point, Dictionary<Element, int> elementToID)
@@ -33,13 +32,9 @@ public class JsonDiagram
             id = elementToID[point];
             position = point.position;
             percentage = point.percentage;
-            foreach (Line line in point.attatchedLines)
+            foreach (Element element in point.attachedElements)
             {
-                attachedLineIDs.Add(elementToID[line]);
-            }
-            foreach (Circle circle in point.circles)
-            {
-                circleIDs.Add(elementToID[circle]);
+                elementIDs.Add(elementToID[element]);
             }
             if (point.semiAttachedLine != null)
             {
@@ -98,15 +93,14 @@ public class JsonDiagram
     [System.Serializable]
     public class JsonAngle : JsonElement
     {
-        public int startID;
-        public int centreID;
-        public int endID;
+        public int[] pointIDs = new int[3];
 
         public JsonAngle(Angle angle, Dictionary<Element, int> elementToID)
         {
-            startID = elementToID[angle.start];
-            centreID = elementToID[angle.centre];
-            endID = elementToID[angle.end];
+            for (int i = 0; i < angle.points.Length; i++)
+            {
+                pointIDs[i] = elementToID[angle.points[i]];
+            }
             isLabelVisible = angle.isLabelVisible;
             labelOverride = angle.labelOverride;
         }

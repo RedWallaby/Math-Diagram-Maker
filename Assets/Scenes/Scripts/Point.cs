@@ -5,12 +5,12 @@ using UnityEngine;
 
 public class Point : Element
 {
+    public CircleCollider2D col;
+
     public Vector2 position => gameObject.transform.position;
-    public List<Line> attatchedLines;
-    public List<Circle> circles;
+    public List<Element> attachedElements;
     public Attachable semiAttachedLine;
 	public float percentage;
-    public CircleCollider2D col;
 
     public override string LabelData
     {
@@ -28,24 +28,15 @@ public class Point : Element
         }
     }
 
-    public void Awake()
-	{
-		col = GetComponent<CircleCollider2D>();
-		if (col == null)
-		{
-			col = gameObject.AddComponent<CircleCollider2D>();
-		}
-	}
-
+    /// <summary>
+    /// Updates the position of the point and all attached elements
+    /// </summary>
+    /// <param name="placingPosition">The new position of the <c>Point</c></param>
     public void UpdatePoint(Vector2 placingPosition)
     {
-        foreach (Line line in attatchedLines)
+        foreach (Element element in attachedElements)
         {
-            line.UpdatePointPosition(this, placingPosition);
-        }
-        foreach (Circle circle in circles)
-        {
-            circle.UpdateCentrePosition(placingPosition);
+            element.UpdatePointPosition(this, placingPosition);
         }
         gameObject.transform.position = placingPosition;
         SetLabel();
@@ -53,16 +44,21 @@ public class Point : Element
 
     public override void Delete(Diagram diagram = null)
     {
-        while (0 < attatchedLines.Count)
+        while (0 < attachedElements.Count)
         {
-            attatchedLines[0].Delete(diagram);
-        }
-        while (0 < circles.Count)
-        {
-            circles[0].Delete(diagram);
+            attachedElements[0].Delete(diagram);
         }
         if (semiAttachedLine != null) semiAttachedLine.attachedPoints.Remove(this);
         diagram?.elements.Remove(this);
         DestroyImmediate(gameObject);
+    }
+
+    public void Awake()
+    {
+        col = GetComponent<CircleCollider2D>();
+        if (col == null)
+        {
+            col = gameObject.AddComponent<CircleCollider2D>();
+        }
     }
 }

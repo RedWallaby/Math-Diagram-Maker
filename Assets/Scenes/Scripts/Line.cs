@@ -4,45 +4,62 @@ using UnityEngine;
 
 public class Line : Attachable
 {
-    public Point[] points = new Point[2];
-    public LineRenderer line;
     public PolygonCollider2D col;
+    public LineRenderer line;
+
+    public Point[] points = new Point[2];
     public float colliderWidthMultiplier = 2f;
-    public float length => Vector2.Distance(line.GetPosition(0), line.GetPosition(1));
+    public float Length => Vector2.Distance(line.GetPosition(0), line.GetPosition(1));
 
     public override string LabelData
     {
         get
         {
-            return Math.Round(length, 2).ToString();
+            return Math.Round(Length, 2).ToString();
         }
     }
 
-    public override Vector2 LabelPosition     {
+    public override Vector2 LabelPosition
+    {
         get
         {
             return gameObject.transform.position;
         }
     }
 
-    public void Awake()
+    /// <summary>
+    /// Sets the polygon collider path based on the line's <c>Point</c> positions.
+    /// </summary>
+    public void DrawLineHitbox()
     {
-        line = GetComponent<LineRenderer>();
-        if (line == null)
-        {
-            line = gameObject.AddComponent<LineRenderer>();
-        }
-        col = GetComponent<PolygonCollider2D>();
-        if (col == null)
-        {
-            col = gameObject.AddComponent<PolygonCollider2D>();
-        }
+        col.pathCount = line.positionCount - 1;
+        Vector3[] linePoints = new Vector3[line.positionCount];
+        line.GetPositions(linePoints);
+        List<Vector2> colliderPoints = CalculatePoints(linePoints[0], linePoints[1]);
+        col.SetPath(0, colliderPoints.ConvertAll(point => (Vector2)transform.InverseTransformPoint(point)).ToArray()); // InverseTransformPoint converts world space to local space which is required for collider paths
     }
 
-    public void ForceUpdateLineRenderer()
+    /// <summary>
+    /// Gets the world space coordinates of the points that form the collider of the line
+    /// </summary>
+    /// <param name="pos1">The first position</param>
+    /// <param name="pos2">The second position</param>
+    /// <returns>A list containing 4 elements, corresponding to the vertexes of the line's collider</returns>
+    public List<Vector2> CalculatePoints(Vector2 pos1, Vector2 pos2)
     {
-        line.SetPosition(0, points[0].transform.position);
-        line.SetPosition(1, points[1].transform.position);
+        float width = line.startWidth * colliderWidthMultiplier;
+        float x = pos2.x - pos1.x;
+        float y = pos1.y - pos2.y;
+        float deltaX = width / 2 * y / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
+        float deltaY = width / 2 * x / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
+        List<Vector2> points = new()
+        {
+            pos1 + new Vector2(deltaX, deltaY),
+            pos2 + new Vector2(deltaX, deltaY),
+            pos2 - new Vector2(deltaX, deltaY),
+            pos1 - new Vector2(deltaX, deltaY)
+        };
+        return points;
     }
 
     public void SetPosition()
@@ -50,48 +67,18 @@ public class Line : Attachable
         transform.position = (line.GetPosition(0) + line.GetPosition(1)) / 2;
     }
 
-    // Calculates the distance of a position as a ratio to each end of the line, where 0 is at the start of the line and 1 is at the end
-    public override float CalculatePercentage(Vector2 point)
+
+    public void ForceUpdateLineRenderer()
     {
-        Vector2 startPoint = line.GetPosition(0);
-        Vector2 endPoint = line.GetPosition(1);
-        float percentage = 0;
-        if (startPoint.x == endPoint.x) //Vertical line
-            percentage = (point.y - startPoint.y) / (endPoint.y - startPoint.y);
-        else
-            percentage = (point.x - startPoint.x) / (endPoint.x - startPoint.x);
-        return percentage;
+        line.SetPosition(0, points[0].transform.position);
+        line.SetPosition(1, points[1].transform.position);
     }
 
-    // Move one of the points to a new position
-    public void UpdatePointPosition(Point point, Vector3 position)
-    {
-        int index = System.Array.IndexOf(points, point);
-        if (index == -1)
-        {
-            Debug.LogError("Point not attached to line");
-            return;
-        }
-
-        // Update attached points
-        foreach (Point attachedPoint in attachedPoints)
-        {
-            Vector2 newPosition = Vector2.Lerp(index == 0 ? position : line.GetPosition(0), index == 1 ? position : line.GetPosition(1), attachedPoint.percentage);
-            foreach (Line attachedLine in attachedPoint.attatchedLines)
-            {
-                attachedLine.UpdatePointPosition(attachedPoint, newPosition);
-            }
-            attachedPoint.gameObject.transform.position = newPosition;
-        }
-
-        // Update the point's position to the average of its point's positions
-        SetPosition();
-        SetLabel();
-        //Update the line renderer position
-        line.SetPosition(index, position);
-    }
-
-    // Uses a mathemtical formula to calculate the closest point on a line
+    /// <summary>
+    /// Gets the closest position on the <c>Line</c>> from a given world space position
+    /// </summary>
+    /// <param name="point">The referenced position</param>
+    /// <returns>The world space position on the <c>Line</c></returns>
     public override Vector2 GetClosestPosition(Vector2 point)
     {
         Vector3[] linePoints = new Vector3[line.positionCount];
@@ -126,63 +113,49 @@ public class Line : Attachable
         return new Vector2(x, y);
     }
 
-
-    // CLICKABLE LINE 
-    public void LateUpdate()
+    // Calculates the distance of a position as a ratio to each end of the line, where 0 is at the start of the line and 1 is at the end
+    public override float CalculatePercentage(Vector2 point)
     {
-        col.pathCount = line.positionCount - 1;
-        Vector3[] linePoints = new Vector3[line.positionCount];
-        line.GetPositions(linePoints);
-        List<Vector2> colliderPoints = CalculatePoints(linePoints[0], linePoints[1]);
-        col.SetPath(0, colliderPoints.ConvertAll(point => (Vector2)transform.InverseTransformPoint(point)).ToArray()); // InverseTransformPoint converts world space to local space which is required for collider paths
-    }
-
-    public List<Vector2> CalculatePoints(Vector2 pos1, Vector2 pos2)
-    {
-        float width = line.startWidth * colliderWidthMultiplier;
-        float x = pos2.x - pos1.x;
-        float y = pos1.y - pos2.y;
-        float deltaX = width / 2 * y / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
-        float deltaY = width / 2 * x / Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(y, 2));
-        List<Vector2> points = new()
-        {
-            pos1 + new Vector2(deltaX, deltaY),
-            pos2 + new Vector2(deltaX, deltaY),
-            pos2 - new Vector2(deltaX, deltaY),
-            pos1 - new Vector2(deltaX, deltaY)
-        };
-        return points;
-    }
-
-
-    // EASE OF USE FUNCTIONS
-    public Point GetSharedPoint(Line line)
-    {
-        foreach (Point point in points)
-        {
-            if (line.points[0] == point || line.points[1] == point)
-            {
-                return point;
-            }
-        }
-        return null;
-    }
-
-    public Vector2 GetLineVector(Point point)
-    {
-        if (point == points[0])
-        {
-            return points[1].position - points[0].position;
-        }
-        else if (point == points[1])
-        {
-            return points[0].position - points[1].position;
-        }
+        Vector2 startPoint = line.GetPosition(0);
+        Vector2 endPoint = line.GetPosition(1);
+        float percentage = 0;
+        if (startPoint.x == endPoint.x) //Vertical line
+            percentage = (point.y - startPoint.y) / (endPoint.y - startPoint.y);
         else
+            percentage = (point.x - startPoint.x) / (endPoint.x - startPoint.x);
+        return percentage;
+    }
+
+    /// <summary>
+    /// Updates the <c>Line</c> and its attached points based on the new position of the <c>Point</c>>
+    /// </summary>
+    /// <param name="point">The <c>Point</c> that will move</param>
+    /// <param name="placingPosition">The new position for the <c>Point<c/></param>
+    public override void UpdatePointPosition(Point point, Vector2 position)
+    {
+        int index = Array.IndexOf(points, point);
+        if (index == -1)
         {
             Debug.LogError("Point not attached to line");
-            return Vector2.zero;
+            return;
         }
+
+        // Update attached points
+        foreach (Point attachedPoint in attachedPoints)
+        {
+            Vector2 newPosition = Vector2.Lerp(index == 0 ? position : line.GetPosition(0), index == 1 ? position : line.GetPosition(1), attachedPoint.percentage);
+            foreach (Element element in attachedPoint.attachedElements)
+            {
+                element.UpdatePointPosition(attachedPoint, newPosition);
+            }
+            attachedPoint.gameObject.transform.position = newPosition;
+        }
+
+        // Update the line's position to the average of its point's positions
+        SetPosition();
+        SetLabel();
+        line.SetPosition(index, position);
+        DrawLineHitbox();
     }
 
     public override void Delete(Diagram diagram = null)
@@ -195,9 +168,23 @@ public class Line : Attachable
         foreach (Point point in points)
         {
             if (!point) continue; // In case the point was already deleted or hasn't been registered yet
-            point.attatchedLines.Remove(this);
+            point.attachedElements.Remove(this);
         }
         diagram?.elements.Remove(this);
         DestroyImmediate(gameObject);
+    }
+
+    public void Awake()
+    {
+        line = GetComponent<LineRenderer>();
+        if (line == null)
+        {
+            line = gameObject.AddComponent<LineRenderer>();
+        }
+        col = GetComponent<PolygonCollider2D>();
+        if (col == null)
+        {
+            col = gameObject.AddComponent<PolygonCollider2D>();
+        }
     }
 }

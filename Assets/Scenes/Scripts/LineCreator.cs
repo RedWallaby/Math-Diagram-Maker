@@ -8,12 +8,13 @@ using UnityEngine.UIElements;
 
 public class LineCreator : DiagramEditor
 {
-    public Line line;
     public PlacingStage placing;
+    public Line line;
+
+    public override string NotificationText => "Select 2 positions/points to draw a line between";
 
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (placing != PlacingStage.None) return;
         diagram.SetEditor(this);
     }
 
@@ -31,9 +32,8 @@ public class LineCreator : DiagramEditor
         placing = PlacingStage.None;
     }
 
-    public void Update()
+    public override void Tick()
     {
-        if (placing == PlacingStage.None) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         diagram.GetProminentFeature(ref placingPosition, out Point hoveringPoint, out Attachable attachable);
@@ -59,11 +59,14 @@ public class LineCreator : DiagramEditor
             diagram.elements.Add(line);
             line.SetPosition();
             line.col.enabled = true;
-            line = null;
+            line.DrawLineHitbox();
             ActivateEdit();
         }
     }
 
+    /// <summary>
+    /// Creaties a new <c>Point</c> or attaches the line to an existing one
+    /// </summary>
     public void ProcessLine(Vector2 position, Point hoveringPoint, Attachable attachable)
     {
 		// Create a new point if no point is currently selected
@@ -80,7 +83,7 @@ public class LineCreator : DiagramEditor
 
 		// Attach the point to the line
 		line.points[placing == PlacingStage.Point ? 0 : 1] = hoveringPoint;
-		hoveringPoint.attatchedLines.Add(line);
+		hoveringPoint.attachedElements.Add(line);
 	}
 
     public enum PlacingStage

@@ -4,25 +4,19 @@ using UnityEngine.UI;
 
 public class Label : MonoBehaviour
 {
-    public RectTransform rect;
     public Diagram diagram;
 
-    public Element element;
-
+    public RectTransform rect;
     public TMP_Text headerText;
     public TMP_InputField field;
-    public bool isVisible = true;
 
-    // Setting rectTransform is more computationally effecient than toggling the object, scale 0 = Toggled Off, 1 = Toggled On
-    public void SetRect(bool visible)
-    {
-        isVisible = visible;
-        float scale = visible ? 1f : 0f;
-        rect.localScale = new Vector3(scale, scale, 1f);
-    }
+    private Element element;
+    private bool isVisible = true;
 
-    // Update is called once per frame
-    void Update()
+    /// <summary>
+    /// The main label update loop that checks for mouse input and updates the label's position and content
+    /// </summary>
+    void LateUpdate()
     {
         if (Input.GetMouseButtonDown(1) && diagram.isEnabled)
         {
@@ -35,6 +29,23 @@ public class Label : MonoBehaviour
             transform.position = mousePos;
             UpdateRect();
         }
+        if (Input.GetMouseButtonDown(0) && diagram.isEnabled && isVisible && diagram.clickedOnDiagram)
+        {
+            SetRect(false);
+        }
+    }
+
+    /// <summary>
+    /// Toggles the label object's visibility by setting its scale
+    /// </summary>
+    /// <remarks>
+    /// This method is more efficient than setting the active state of the GameObject
+    /// </remarks>
+    public void SetRect(bool visible)
+    {
+        isVisible = visible;
+        float scale = visible ? 1f : 0f;
+        rect.localScale = new Vector3(scale, scale, 1f);
     }
 
     public void UpdateRect()

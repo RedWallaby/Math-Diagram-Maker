@@ -5,12 +5,13 @@ using static LineCreator;
 
 public class CircleCreator : DiagramEditor
 {
-    public Circle circle;
     public PlacingStage placing;
+    public Circle circle;
+
+    public override string NotificationText => "Select a position/point, then select a position to set the radius";
 
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (placing != PlacingStage.None) return;
         diagram.SetEditor(this);
     }
 
@@ -29,9 +30,8 @@ public class CircleCreator : DiagramEditor
         placing = PlacingStage.None;
     }
 
-    public void Update()
+    public override void Tick()
     {
-        if (placing == PlacingStage.None) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         if (placing == PlacingStage.Point)
@@ -44,6 +44,9 @@ public class CircleCreator : DiagramEditor
         }
     }
 
+    /// <summary>
+    /// Initialises the circle placement by setting up a point at the clicked position
+    /// </summary>
     public void SetupPoint(Vector2 position)
     {
 		diagram.GetProminentFeature(ref position, out Point hoveringPoint, out Attachable attachable);
@@ -60,13 +63,16 @@ public class CircleCreator : DiagramEditor
 			}
 		}
 
-        hoveringPoint.circles.Add(circle);
+        hoveringPoint.attachedElements.Add(circle);
 		circle.centre = hoveringPoint;
 		circle.gameObject.transform.position = position;
 		circle.DrawCircle();
 		placing = PlacingStage.Line;
 	}
 
+    /// <summary>
+    /// Adjusts the circle's radius based on the distance from its centre <c>Point</c> to the given position
+    /// </summary>
     public void AdjustRadius(Vector2 position)
     {
 		float radius = Vector2.Distance(circle.centre.position, position);

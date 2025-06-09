@@ -5,13 +5,13 @@ using System.Drawing;
 
 public class AngleCreator : DiagramEditor
 {
-    //public PlacingStage placing;
     public AngleStage placing;
     public Angle angle;
 
+    public override string NotificationText => "Select 3 points to create an angle between";
+
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (placing != AngleStage.None) return;
         diagram.SetEditor(this);
     }
 
@@ -28,10 +28,8 @@ public class AngleCreator : DiagramEditor
         placing = AngleStage.None;
     }
 
-    public void Update()
+    public override void Tick()
     {
-        if (placing == AngleStage.None) return;
-
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
         if (placing == AngleStage.End)
@@ -48,25 +46,33 @@ public class AngleCreator : DiagramEditor
         EnterNextAngleStage(point);
     }
 
+    /// <summary>
+    /// Proceeds to the next stage of angle creation based on the current placing stage
+    /// </summary>
     public void EnterNextAngleStage(Point point)
     {
         if (placing == AngleStage.Start)
         {
-            angle.start = point;
+            angle.points[0] = point;
             placing = AngleStage.Centre;
         }
         else if (placing == AngleStage.Centre)
         {
-            angle.centre = point;
+            angle.points[1] = point;
             placing = AngleStage.End;
         }
         else if (placing == AngleStage.End)
         {
             diagram.elements.Add(angle);
 
-            angle.end = point;
+            angle.points[2] = point;
             angle.GetAngleData();
             angle.DrawAngle();
+            angle.DrawHitbox();
+            foreach (Point anglePoint in angle.points)
+            {
+                anglePoint.attachedElements.Add(angle);
+            }
             ActivateEdit();
         }
     }

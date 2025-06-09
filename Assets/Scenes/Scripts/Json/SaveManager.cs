@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using static JsonDiagram;
@@ -17,8 +18,12 @@ public class SaveManager : MonoBehaviour
     public GameObject alertObject;
     public TMP_Text alertText;
     public TMP_Text saveText;
+
     private bool saved;
 
+    /// <summary>
+    /// Opens the save menu and sets the title and input field text based on the current diagram name
+    /// </summary>
     public void OpenMenu()
     {
         if (string.IsNullOrEmpty(diagram.diagramName))
@@ -31,12 +36,31 @@ public class SaveManager : MonoBehaviour
             title.text = diagram.diagramName;
             inputField.text = diagram.diagramName;
         }
-        saveText.text = "Save";
-        saveText.color = Color.white;
-        saved = false;
+        SetSaved(false);
         alertObject.SetActive(false);
     }
 
+    /// <summary>
+    /// Sets the saved state of the diagram and updates the save button text and color accordingly
+    /// </summary>
+    /// <param name="value">Whether the diagram is saved or not</param>
+    public void SetSaved(bool value) {
+        saved = value;
+        if (value)
+        {
+            saveText.text = "Saved!";
+            saveText.color = Color.green;
+        }
+        else
+        {
+            saveText.text = "Save";
+            saveText.color = Color.white;
+        }
+    }
+    /// <summary>
+    /// Saves the current diagram with the name from the input field
+    /// Validates the name and checks if it already exists before saving
+    /// </summary>
     public void SaveCurrentDiagram()
     {
         if (saved) return;
@@ -44,43 +68,48 @@ public class SaveManager : MonoBehaviour
         if (!ValidateName(name)) return;
 
         // Rename the file if the name has changed
-        string currentPath = Application.persistentDataPath + $"/{diagram.diagramName}.json";
+        string currentPath = JsonManager.GetJsonFilePath(diagram.diagramName);
         if (File.Exists(currentPath) && name.ToLower() != diagram.diagramName.ToLower())
         {
-            File.Move(currentPath, Application.persistentDataPath + $"/{name}.json");
+            File.Move(currentPath, JsonManager.GetJsonFilePath(name));
         }
 
-        saveText.text = "Saved!";
-        saveText.color = Color.green;
-        saved = true;
+        SetSaved(true);
         title.text = name;
         diagram.diagramName = name;
         SaveJsonDiagram(inputField.text);
     }
 
+    /// <summary>
+    /// Validates the name of the diagram before saving
+    /// </summary>
+    /// <param name="name">The diagram name to be saved</param>
+    /// <returns>Whether the name was valid</returns>
     public bool ValidateName(string name)
     {
         if (string.IsNullOrEmpty(name))
         {
-            alertObject.SetActive(true);
-            alertText.text = "Please enter a name for the diagram.";
+            SetError("Please enter a name for the diagram.");
             return false;
         }
-        string[] existingFiles = Directory.GetFiles(Application.persistentDataPath, "*.json", SearchOption.TopDirectoryOnly);
-        if (name != diagram.diagramName && existingFiles.Any(file => Path.GetFileNameWithoutExtension(file).ToLower() == name.ToLower())) // NEEDS TO BE TO LOWER AS WINDOWS IS CASE INSENSITIVE
+        string[] existingFiles = JsonManager.GetFilePaths();
+        if (name != diagram.diagramName && existingFiles.Any(file => Path.GetFileNameWithoutExtension(file).ToLower() == name.ToLower())) // Needs to be ToLower() to avoid case sensitivity issues
         {
-            alertObject.SetActive(true);
-            alertText.text = "A diagram with this name already exists.";
+            SetError("A diagram with this name already exists.");
             return false;
         }
         foreach (char c in Path.GetInvalidFileNameChars())
         {
             if (name.Contains(c))
             {
-                alertObject.SetActive(true);
-                alertText.text = "The name cannot contain any of the following \\ / : * ? \" < > |";
+                SetError("The name cannot contain any of the following \\ / : * ? \" < > |");
                 return false;
             }
+        }
+        if (name.Length > 50)
+        {
+            SetError("The name cannot be longer than 50 characters.");
+            return false;
         }
         alertObject.SetActive(false);
         return true;
@@ -91,10 +120,44 @@ public class SaveManager : MonoBehaviour
         JsonDiagram jsonDiagram = SaveDiagram();
         jsonDiagram.name = name;
         string diagram = JsonUtility.ToJson(jsonDiagram, true);
-        string filePath = Application.persistentDataPath + $"/{name}.json";
+        string filePath = JsonManager.GetJsonFilePath(name);
         File.WriteAllText(filePath, diagram);
     }
 
+    /// <summary>
+    /// Saves the current diagram as a PNG file to a user-selected location
+    /// </summary>
+    public void SaveCurrentDiagramToFile()
+    {
+        string path = EditorUtility.SaveFilePanel("Save Diagram", JsonManager.GetWorkingDirectory(), diagram.diagramName, "png");
+        if (string.IsNullOrEmpty(path)) return; // User cancelled the save dialog
+
+        // Setup RenderTexture
+        diagram.SetBoundsOnTextureCamera();
+        RenderTexture texture = new(1024, 1024, 32);
+        diagram.textureCamera.targetTexture = texture;
+        diagram.textureCamera.Render();
+
+        // Convert RenderTexture to Texture2D and save as PNG
+        Texture2D tex = new(1024, 1024);
+        RenderTexture.active = texture;
+        tex.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+
+        diagram.notification.SetNotification("Diagram saved as " + Path.GetFileName(path), 5f);
+    }
+
+    public void SetError(string error)
+    {
+        alertObject.SetActive(true);
+        alertText.text = error;
+    }
+
+    /// <summary>
+    /// Converts the current diagram to a <c>JsonDiagram</c> object
+    /// </summary>
+    /// <returns>The new <c>JsonDiagram</c></returns>
     public JsonDiagram SaveDiagram()
     {
         Dictionary<Element, int> elementToIdMap = FillDictionary();
@@ -130,6 +193,10 @@ public class SaveManager : MonoBehaviour
         return jsonDiagram;
     }
 
+    /// <summary>
+    /// Fills a dictionary mapping each <c>Element</c> to an index
+    /// </summary>
+    /// <returns>The created mapping</returns>
     public Dictionary<Element, int> FillDictionary()
     {
         Dictionary<Element, int> elementToIdMap = new();

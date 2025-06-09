@@ -4,12 +4,13 @@ using UnityEngine.UIElements;
 
 public class PointCreator : DiagramEditor
 {
-    public Point point;
     public bool placing;
+    public Point point;
+
+    public override string NotificationText => "Select a position to place a point";
 
     public override void OnPointerClick(PointerEventData eventData)
     {
-        if (placing) return; // Prevent double placing
         diagram.SetEditor(this);
     }
 
@@ -28,9 +29,8 @@ public class PointCreator : DiagramEditor
         placing = false;
     }
 
-    public void Update()
+    public override void Tick()
     {
-        if (!placing) return;
         Vector2 placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Attachable attachable = diagram.GetProminentAttachable(ref placingPosition);
         if (!attachable) diagram.LockPositionToGrid(ref placingPosition);
@@ -40,6 +40,10 @@ public class PointCreator : DiagramEditor
         PlacePoint(attachable);
     }
 
+    /// <summary>
+    /// Places the point at the specified attachable, if provided, otherwise simply registers the point in the diagram
+    /// </summary>
+    /// <param name="attachable"></param>
     public void PlacePoint(Attachable attachable)
 	{
 		if (attachable) attachable.AttachPoint(point);

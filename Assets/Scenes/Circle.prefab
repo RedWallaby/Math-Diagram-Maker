@@ -60,15 +60,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   labelText: {fileID: 0}
+  isLabelVisible: 0
   labelOverride: 
   attachedPoints: []
   line: {fileID: 5695735269369540382}
   centre: {fileID: 0}
-  radius: 1
-  accuracy: 360
+  radius: 0
+  accuracy: 90
   col: {fileID: 0}
   colliderWidthMultiplier: 2
-  previousCentre: {x: 0, y: 0, z: 0}
 --- !u!120 &5695735269369540382
 LineRenderer:
   serializedVersion: 2

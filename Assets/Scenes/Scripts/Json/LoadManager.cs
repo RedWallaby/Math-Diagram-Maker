@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using static JsonDiagram;
@@ -8,59 +9,54 @@ using static JsonDiagram;
 public class LoadManager : MonoBehaviour
 {
     public Diagram diagram;
-    public Camera textureCamera;
-
-    public GameObject loadObjectPrefab;
-    public Transform content;
 
     public Color unselectedColor;
     public Color selectedColor;
 
-    public LoadObject loadObject;
-    public List<LoadObject> loadObjects;
+    public Transform content;
+    public GameObject loadObjectPrefab;
 
+    private LoadObject loadObject;
+    private List<LoadObject> loadObjects;
+
+    /// <summary>
+    /// Initialises the load menu
+    /// </summary>
+    public void OpenLoadMenu()
+    {
+        DeselectLoadObject();
+        LoadDiagramObjects();
+    }
+
+    /// <summary>
+    /// Sets the currently selected <c>LoadObject</c> and updates its colour to indicate selection
+    /// </summary>
+    /// <param name="obj">The referenced <c>LoadObject</c></param>
     public void SelectLoadObject(LoadObject obj)
     {
         if (loadObject != null)
         {
-            loadObject.mainBody.color = unselectedColor; // Reset previous selection color
+            loadObject.mainBody.color = unselectedColor;
         }
         loadObject = obj;
-        loadObject.mainBody.color = selectedColor; // Highlight the selected object
+        loadObject.mainBody.color = selectedColor;
     }
 
+    /// <summary>
+    /// Deletes the specified <c>LoadObject</c> from the scene and removes it from the list of load objects
+    /// </summary>
+    /// <param name="obj">The references <c>LoadObject</c></param>
     public void DeleteLoadObject(LoadObject obj)
     {
-        string path = Application.persistentDataPath + $"/{obj.diagram.name}.json";
+        string path = JsonManager.GetJsonFilePath(obj.diagram.name);
         File.Delete(path);
         Destroy(obj.gameObject);
+        loadObjects.Remove(obj);
     }
 
-    public void OpenLoadDiagram()
-    {
-        if (loadObject == null) return;
-        LoadFromDiagram(loadObject.diagram);
-        diagram.SetActive(true);
-        gameObject.SetActive(false);
-        loadObjects.Remove(loadObject);
-        Destroy(loadObject.gameObject);
-    }
-
-    // Update is called once per frame
-    public void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            LoadNewTextures();
-        }
-    }
-
-    public void OpenLoadMenu()
-    {
-        DeselectLoadObject();
-        LoadNewTextures();
-    }
-
+    /// <summary>
+    /// Resets the colour of the currently selected load object
+    /// </summary>
     public void DeselectLoadObject()
     {
         foreach (LoadObject obj in loadObjects)
@@ -68,34 +64,51 @@ public class LoadManager : MonoBehaviour
             if (obj.mainBody.color == selectedColor)
             {
                 obj.mainBody.color = unselectedColor;
-                break; // Leave loop after resetting the only possible selected object
+                break;
             }
         }
-        loadObject = null; // Clear the currently selected object
+        loadObject = null;
     }
 
-    public void LoadNewTextures()
+    /// <summary>
+    /// Loads all diagram objects from the JSON files in the working directory
+    /// Displays these diagrams onto image objects in the scene
+    /// </summary>
+    public void LoadDiagramObjects()
     {
-        string[] paths = Directory.GetFiles(Application.persistentDataPath, "*.json", SearchOption.TopDirectoryOnly);
+        string[] paths = JsonManager.GetFilePaths();
 
         foreach (string path in paths)
         {
             JsonDiagram jsonDiagram = GetJsonDiagram(path);
             if (CheckIfExists(jsonDiagram)) continue; // Skip if diagram already exists
 
-            LoadJsonDiagram(path);
-            diagram.SetBoundsOnCamera(textureCamera);
+            LoadFromDiagram(jsonDiagram);
+            diagram.SetBoundsOnTextureCamera();
 
             GameObject newObj = Instantiate(loadObjectPrefab, content);
             newObj.transform.SetAsFirstSibling(); // Allows most recently loaded diagram to be on top
             LoadObject loadObject = newObj.GetComponent<LoadObject>();
 
-            RenderTexture(loadObject);
+            RenderTextureToMaterial(loadObject);
             loadObject.title.text = diagram.diagramName;
             loadObject.diagram = jsonDiagram;
             loadObject.loadManager = this;
             loadObjects.Add(loadObject);
         }
+    }
+
+    public void RenderTextureToMaterial(LoadObject loadObj)
+    {
+        RenderTexture texture = new(1024, 1024, 32);
+        diagram.textureCamera.targetTexture = texture;
+        diagram.textureCamera.Render();
+
+        Material material = new(Shader.Find("UI/Default"))
+        {
+            mainTexture = texture
+        };
+        loadObj.image.material = material;
     }
 
     public bool CheckIfExists(JsonDiagram jsonDiagram)
@@ -107,46 +120,37 @@ public class LoadManager : MonoBehaviour
         return false;
     }
 
-    public void RenderTexture(LoadObject loadObj)
-    {
-        RenderTexture texture = new(1024, 1024, 32);
-        textureCamera.targetTexture = texture;
-        textureCamera.Render();
-
-        Material material = new(Shader.Find("UI/Default"))
-        {
-            mainTexture = texture
-        };
-        loadObj.image.material = material;
-    }
-
     public JsonDiagram GetJsonDiagram(string path)
     {
         string json = File.ReadAllText(path);
         return JsonUtility.FromJson<JsonDiagram>(json);
     }
 
-    public JsonDiagram LoadJsonDiagram(string path)
+    /// <summary>
+    /// Loads the currently selected <c>LoadObject</c> into the main diagram
+    /// </summary>
+    /// <remarks>
+    /// Destroys the <c>LoadObject</c> after loading to indicate that it must be reloaded
+    /// </remarks>
+    public void OpenLoadDiagram()
     {
-        if (File.Exists(path))
-        {
-            JsonDiagram jsonDiagram = GetJsonDiagram(path);
-            LoadFromDiagram(jsonDiagram);
-            Debug.Log("Loaded diagram name: " + jsonDiagram.name);
-            return jsonDiagram;
-        }
-        else
-        {
-            Debug.LogError("File not found: " + path);
-            return null;
-        }
+        if (loadObject == null) return;
+        LoadFromDiagram(loadObject.diagram);
+        diagram.SetActive(true);
+        gameObject.SetActive(false);
+        loadObjects.Remove(loadObject);
+        Destroy(loadObject.gameObject);
     }
 
-    public void LoadFromDiagram(JsonDiagram jsonDiagram)
+    /// <summary>
+    /// Loads a <c>JsonDiagram</c> into the main diagram
+    /// </summary>
+    /// <param name="jsonDiagram">The <c>JsonDiagram</c> to load</param>
+    public void LoadFromDiagram(JsonDiagram jsonDiagram) // TODO (MAYBE) CREATE LOAD ELEMENT FUNCTION TO OVERIDE IN POINT, LINE, CIRCLE, ANGLE THEN CALL THAT HERE AND COMBINE ALL INTO ONE FOR LOOP (would be more modular and easier to read)
     {
         diagram.diagramName = jsonDiagram.name;
 
-        diagram.ClearDiagram();
+        diagram.ResetDiagram();
 
         Dictionary<int, Point> idToPointMap = new();
         LoadPoints(idToPointMap, jsonDiagram);
@@ -157,16 +161,19 @@ public class LoadManager : MonoBehaviour
         // Initialise labels for all elements
         foreach (Element element in diagram.elements)
         {
-            Debug.Log("Loading element: " + element.gameObject.name);
             if (element.isLabelVisible)
             {
-                Debug.Log("Creating label for: " + element.gameObject.name);
                 diagram.label.CreateLabelObject(element);
                 element.SetLabel();
             }
         }
     }
 
+    /// <summary>
+    /// Loads all <c>Point</c> objects from a <c>JsonDiagram</c> into the main diagram
+    /// </summary>
+    /// <param name="idToPointMap">The mapping dictionary to fill</param>
+    /// <param name="jsonDiagram">The <c>JsonDiagram</c> to load <c>Point</c> objects from</param>
     public void LoadPoints(Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
     {
         foreach (JsonPoint jsonPoint in jsonDiagram.points)
@@ -181,6 +188,11 @@ public class LoadManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Loads all <c>Line</c> objects from a <c>JsonDiagram</c> into the main diagram
+    /// </summary>
+    /// <param name="idToPointMap">The mapping dictionary to get <c>Point</c> objects from</param>
+    /// <param name="jsonDiagram">The <c>JsonDiagram</c> to load <c>Line</c> objects from</param>
     public void LoadLines(Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
     {
         foreach (JsonLine jsonLine in jsonDiagram.lines)
@@ -190,7 +202,7 @@ public class LoadManager : MonoBehaviour
             {
                 Point point = idToPointMap[jsonLine.pointIDs[i]];
                 line.points[i] = point;
-                point.attatchedLines.Add(line);
+                point.attachedElements.Add(line);
             }
             line.ForceUpdateLineRenderer();
             line.SetPosition();
@@ -205,6 +217,11 @@ public class LoadManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Loads all <c>Circle</c> objects from a <c>JsonDiagram</c> into the main diagram
+    /// </summary>
+    /// <param name="idToPointMap">The mapping dictionary to get <c>Point</c> objects from</param>
+    /// <param name="jsonDiagram">The <c>JsonDiagram</c> to load <c>Circle</c> objects from</param>
     public void LoadCircles(Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
     {
         foreach (JsonCircle jsonCircle in jsonDiagram.circles)
@@ -212,7 +229,7 @@ public class LoadManager : MonoBehaviour
             Point point = idToPointMap[jsonCircle.centreID];
             Circle circle = diagram.CreateCircle(point.position);
             circle.centre = point;
-            point.circles.Add(circle);
+            point.attachedElements.Add(circle);
             foreach (int pointID in jsonCircle.attachedPointIDs)
             {
                 circle.AttachPoint(idToPointMap[pointID]);
@@ -226,19 +243,29 @@ public class LoadManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Loads all <c>Angle</c> objects from a <c>JsonDiagram</c> into the main diagram
+    /// </summary>
+    /// <param name="idToPointMap">The mapping dictionary to get <c>Point</c> objects from</param>
+    /// <param name="jsonDiagram">The <c>JsonDiagram</c> to load <c>Angle</c> objects from</param>
     public void LoadAngles(Dictionary<int, Point> idToPointMap, JsonDiagram jsonDiagram)
     {
         foreach (JsonAngle jsonAngle in jsonDiagram.angles)
         {
             Angle angle = diagram.CreateAngle();
-            angle.start = idToPointMap[jsonAngle.startID];
-            angle.centre = idToPointMap[jsonAngle.centreID];
-            angle.end = idToPointMap[jsonAngle.endID];
-
+            for (int i = 0; i < jsonAngle.pointIDs.Length; i++)
+            {
+                Point point = idToPointMap[jsonAngle.pointIDs[i]];
+                angle.points[i] = point;
+                point.attachedElements.Add(angle);
+            }
             angle.isLabelVisible = jsonAngle.isLabelVisible;
             angle.labelOverride = jsonAngle.labelOverride;
             diagram.elements.Add(angle);
-            angle.transform.position = angle.centre.position;
+            angle.transform.position = angle.points[0].position;
+            angle.GetAngleData();
+            angle.DrawAngle();
+            angle.DrawHitbox();
         }
     }
 }

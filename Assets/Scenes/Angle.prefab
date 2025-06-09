@@ -51,19 +51,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   labelText: {fileID: 0}
+  isLabelVisible: 0
   labelOverride: 
   line: {fileID: 1606848624312604843}
   startAngle: 0
   angleOffset: 0
-  radius: 0.3
+  radius: 0
   maxRadius: 0.5
   col: {fileID: 2272713038788766833}
-  start: {fileID: 0}
-  centre: {fileID: 0}
-  end: {fileID: 0}
-  prevStart: {x: 0, y: 0}
-  prevCentre: {x: 0, y: 0}
-  prevEnd: {x: 0, y: 0}
+  points:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!120 &1606848624312604843
 LineRenderer:
   serializedVersion: 2

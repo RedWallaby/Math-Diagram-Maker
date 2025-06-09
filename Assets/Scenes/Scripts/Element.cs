@@ -10,12 +10,7 @@ public abstract class Element : MonoBehaviour
 
     public abstract string LabelData { get; }
     public abstract Vector2 LabelPosition { get; }
-
-    public virtual void Delete(Diagram diagram = null)
-    {
-        diagram?.elements.Remove(this);
-        DestroyImmediate(gameObject);
-    }
+    public abstract void Delete(Diagram diagram = null);
 
     public void ToggleLabel()
     {
@@ -36,5 +31,15 @@ public abstract class Element : MonoBehaviour
         {
             labelText.text = labelOverride;
         }
+    }
+
+    /// <summary>
+    /// Updates the <c>Element</c> based on the new position of the point
+    /// </summary>
+    /// <param name="point">The <c>Point</c> that will move</param>
+    /// <param name="placingPosition">The new position for the <c>Point<c/></param>
+    public virtual void UpdatePointPosition(Point point, Vector2 placingPosition)
+    {
+        // This method can be overridden by non-point derived classes to update the position of points attached to this element
     }
 }
