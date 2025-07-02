@@ -92,6 +92,7 @@ public class JsonDiagram
             }
             line.ForceUpdateLineRenderer();
             line.SetPosition();
+            line.DrawLineHitbox();
             foreach (int pointID in attachedPointIDs)
             {
                 line.AttachPoint(idToPointMap[pointID]);

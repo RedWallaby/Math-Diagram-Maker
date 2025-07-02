@@ -129,8 +129,15 @@ public class SaveManager : MonoBehaviour
     /// </summary>
     public void SaveCurrentDiagramToFile()
     {
-        string path = EditorUtility.SaveFilePanel("Save Diagram", JsonManager.GetWorkingDirectory(), diagram.diagramName, "png");
-        if (string.IsNullOrEmpty(path)) return; // User cancelled the save dialog
+        string path;
+        if (diagram.diagramName == null || diagram.diagramName == "")
+        {
+            path = JsonManager.GetWorkingDirectory() + "/NewDiagram.png";
+        }
+        else
+        {
+            path = JsonManager.GetWorkingDirectory() + "/" + diagram.diagramName + ".png";
+        }
 
         // Setup RenderTexture
         diagram.SetBoundsOnTextureCamera();
@@ -145,7 +152,7 @@ public class SaveManager : MonoBehaviour
         tex.Apply();
         File.WriteAllBytes(path, tex.EncodeToPNG());
 
-        diagram.notification.SetNotification("Diagram saved as " + Path.GetFileName(path), 5f);
+        diagram.notification.SetNotification("Diagram saved as " + Path.GetFileName(path) + " to " + path, 5f);
     }
 
     public void SetError(string error)

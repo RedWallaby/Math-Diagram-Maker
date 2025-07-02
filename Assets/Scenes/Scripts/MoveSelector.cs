@@ -93,7 +93,7 @@ public class MoveSelector : DiagramEditor
 
 			if (Input.GetKey(KeyCode.LeftShift))
 			{
-				circle.SetRadius(Mathf.Ceil(radius));
+				circle.SetRadius(Mathf.Ceil(radius / diagram.gridSize) * diagram.gridSize);
 			}
 			else
 			{

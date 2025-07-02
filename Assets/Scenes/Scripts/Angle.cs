@@ -19,8 +19,9 @@ public class Angle : Element
     {
         get
         {
-            return Math.Round(angleOffset, 1).ToString();
-        }
+            return Math.Round(angleOffset, 1).ToString() + "°";
+
+		}
     }
 
     public override Vector2 LabelPosition
