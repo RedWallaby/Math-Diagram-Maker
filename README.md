@@ -23,7 +23,8 @@ A geometrical diagram creator used to produce mathematical visual representation
   - Diagrams can be saved and named which stores them locally
   - Stored diagrams can be reopened to continue editing
   - Stored diagrams can also be deleted
-  - In the editor, the current diagram can be saved as a png which is stored at: \AppData\LocalLow\DefaultCompany\Math Diagram Maker
+  - In the editor, the current diagram can be saved as a png which is stored at:
+    `\AppData\LocalLow\DefaultCompany\Math Diagram Maker`
 - Account Management
   - Secure authentication system
   - Robust registration system
@@ -33,7 +34,7 @@ A geometrical diagram creator used to produce mathematical visual representation
 
 ---
 
-## How to Run the Program
+## How to Run the Program (Windows OS is Required)
 1. Download the ProjectBuild.zip file
 2. Unzip the file to a desired location
 3. Run the main file:  
