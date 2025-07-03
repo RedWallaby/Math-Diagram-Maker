@@ -20,8 +20,8 @@ public class Diagram : MonoBehaviour
     public GameObject editorMenu;
     public RectTransform editorR;
     public MoveSelector defaultEditor;
-    private DiagramEditor currentEditor;
-    private DiagramEditor storedEditor;
+    public DiagramEditor currentEditor;
+    public DiagramEditor storedEditor;
 
     [Header("Label Data")]
     public Label label;
@@ -156,7 +156,7 @@ public class Diagram : MonoBehaviour
         if (currentEditor) // Only deactivate if there is an active editor
         {
             currentEditor.DeactivateEdit();
-            notification.SetNotification(editor.NotificationText);
+            notification.SetNotification(editor.NotificationText); // Only run a notification if an editor is being swapped out
         }
         currentEditor = editor;
         currentEditor.ActivateEdit();

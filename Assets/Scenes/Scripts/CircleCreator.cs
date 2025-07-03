@@ -94,4 +94,9 @@ public class CircleCreator : DiagramEditor
 		circle = null;
 		ActivateEdit();
 	}
+
+    public override Element GetSelectedElement()
+    {
+        return circle;
+    }
 }

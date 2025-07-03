@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-// MAYBE MAKE ABSTRACT
 public abstract class DiagramEditor : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField]
@@ -11,4 +10,5 @@ public abstract class DiagramEditor : MonoBehaviour, IPointerClickHandler
     public abstract void ActivateEdit();
     public abstract void DeactivateEdit();
     public abstract void Tick();
+    public abstract Element GetSelectedElement();
 }

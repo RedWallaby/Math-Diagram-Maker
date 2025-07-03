@@ -77,6 +77,10 @@ public class Label : MonoBehaviour
     {
         if (element == null) return;
         element.Delete(diagram);
+        if (diagram.currentEditor != null && diagram.currentEditor.GetSelectedElement() == null) // If the current editor is editing this element, reset it
+        {
+            diagram.currentEditor.ActivateEdit();
+        }
         element = null;
         SetRect(false);
     }

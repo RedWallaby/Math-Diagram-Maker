@@ -1,7 +1,6 @@
 using UnityEngine;
-using static LineCreator;
 using UnityEngine.EventSystems;
-using System.Drawing;
+using System.Linq;
 
 public class AngleCreator : DiagramEditor
 {
@@ -51,14 +50,21 @@ public class AngleCreator : DiagramEditor
     /// </summary>
     public void EnterNextAngleStage(Point point)
     {
+        if (angle.points.Contains(point))
+        {
+            diagram.notification.SetNotification("This point is already part of the angle", 2f);
+            return;
+        }
         if (placing == AngleStage.Start)
         {
             angle.points[0] = point;
+            point.attachedElements.Add(angle);
             placing = AngleStage.Centre;
         }
         else if (placing == AngleStage.Centre)
         {
             angle.points[1] = point;
+            point.attachedElements.Add(angle);
             placing = AngleStage.End;
         }
         else if (placing == AngleStage.End)
@@ -66,15 +72,17 @@ public class AngleCreator : DiagramEditor
             diagram.elements.Add(angle);
 
             angle.points[2] = point;
+            point.attachedElements.Add(angle);
             angle.GetAngleData();
             angle.DrawAngle();
             angle.DrawHitbox();
-            foreach (Point anglePoint in angle.points)
-            {
-                anglePoint.attachedElements.Add(angle);
-            }
             ActivateEdit();
         }
+    }
+
+    public override Element GetSelectedElement()
+    {
+        return angle;
     }
 
 	public enum AngleStage

@@ -49,6 +49,12 @@ public class LineCreator : DiagramEditor
 		}
 		else
         {
+            if (line.points[0] == hoveringPoint)
+            { 
+                placingPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                hoveringPoint = null;
+                attachable = null;
+            }
             if (!attachable) diagram.LockPositionToGrid(ref placingPosition);
             line.line.SetPosition(1, placingPosition);
 
@@ -85,6 +91,11 @@ public class LineCreator : DiagramEditor
 		line.points[placing == PlacingStage.Point ? 0 : 1] = hoveringPoint;
 		hoveringPoint.attachedElements.Add(line);
 	}
+
+    public override Element GetSelectedElement()
+    {
+        return line;
+    }
 
     public enum PlacingStage
     {

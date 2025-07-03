@@ -100,5 +100,10 @@ public class MoveSelector : DiagramEditor
 				circle.SetRadius(radius);
 			}
 		}
-	}   
+	}
+
+    public override Element GetSelectedElement()
+    {
+        return null;
+    }
 }

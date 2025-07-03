@@ -24,10 +24,8 @@ public class LoadManager : MonoBehaviour
     /// </summary>
     public void OpenLoadMenu()
     {
-        float time = System.DateTime.Now.Millisecond;
         DeselectLoadObject();
         LoadDiagramObjects();
-        Debug.Log("Load menu opened in " + (System.DateTime.Now.Millisecond - time) + "ms");
     }
 
     /// <summary>

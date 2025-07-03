@@ -56,4 +56,9 @@ public class PointCreator : DiagramEditor
 		// Keep the placing persistent
 		ActivateEdit();
 	}
+
+    public override Element GetSelectedElement()
+    {
+        return point;
+    }
 }
